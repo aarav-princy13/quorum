@@ -1,0 +1,16 @@
+name,salt,strength,form,mrp_inr,pack,is_generic,schedule,source
+Crocin 500,paracetamol,500mg,tablet,30.84,15 tablets,0,,seed
+Calpol 500,paracetamol,500mg,tablet,29.50,15 tablets,0,,seed
+Paracetamol 500 (Generic),paracetamol,500mg,tablet,8.00,15 tablets,1,,janaushadhi
+Dolo 650,paracetamol,650mg,tablet,32.00,15 tablets,0,,seed
+Paracetamol 650 (Generic),paracetamol,650mg,tablet,10.50,15 tablets,1,,janaushadhi
+Augmentin 625 Duo,amoxicillin+clavulanic acid,625mg,tablet,205.36,10 tablets,0,H1,seed
+Amoxicillin+Clavulanic Acid 625 (Generic),amoxicillin+clavulanic acid,625mg,tablet,92.00,10 tablets,1,H1,janaushadhi
+Pan 40,pantoprazole,40mg,tablet,135.00,15 tablets,0,H,seed
+Pantoprazole 40 (Generic),pantoprazole,40mg,tablet,24.00,15 tablets,1,H,janaushadhi
+Alprax 0.5,alprazolam,0.5mg,tablet,45.20,15 tablets,0,H1,seed
+Alprazolam 0.5 (Generic),alprazolam,0.5mg,tablet,13.00,15 tablets,1,H1,janaushadhi
+Glycomet 500,metformin,500mg,tablet,24.50,20 tablets,0,H,seed
+Metformin 500 (Generic),metformin,500mg,tablet,7.50,20 tablets,1,H,janaushadhi
+Telma 40,telmisartan,40mg,tablet,98.00,15 tablets,0,H,seed
+Telmisartan 40 (Generic),telmisartan,40mg,tablet,18.00,15 tablets,1,H,janaushadhi

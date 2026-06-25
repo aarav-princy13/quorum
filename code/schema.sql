@@ -1,0 +1,32 @@
+-- brand_to_generic — SQLite schema (stdlib sqlite3, no ORM)
+-- One DB holds the drug catalog (brands + generics) and nearby pharmacies.
+
+-- Each row is a marketed product: a brand OR a generic/Jan Aushadhi equivalent.
+-- Generic matching is done on (salt, strength): same composition => substitutable.
+CREATE TABLE IF NOT EXISTS drugs (
+    id         INTEGER PRIMARY KEY,
+    name       TEXT    NOT NULL,          -- product/brand name as printed, e.g. "Crocin 500"
+    salt       TEXT    NOT NULL,          -- normalized active composition, e.g. "paracetamol"
+    strength   TEXT    NOT NULL,          -- e.g. "500mg" (kept as text; strengths vary in form)
+    form       TEXT,                      -- tablet / syrup / capsule ...
+    mrp_inr    REAL,                      -- price in INR for the given pack
+    pack       TEXT,                      -- pack description, e.g. "15 tablets"
+    is_generic INTEGER NOT NULL DEFAULT 0,-- 1 = generic / Jan Aushadhi, 0 = brand
+    schedule   TEXT    NOT NULL DEFAULT '',-- '' | 'H' | 'H1' | 'X' (Drugs & Cosmetics schedules)
+    source     TEXT                       -- provenance: 'janaushadhi' | 'nppa' | 'az-dataset' | 'seed'
+);
+
+-- Lookups: by composition (for substitution) and by name (for receipt matching).
+CREATE INDEX IF NOT EXISTS idx_drugs_salt_strength ON drugs(salt, strength);
+CREATE INDEX IF NOT EXISTS idx_drugs_name          ON drugs(name);
+
+-- Nearby pharmacies — locations only for the MVP (no live inventory yet).
+CREATE TABLE IF NOT EXISTS pharmacies (
+    id    INTEGER PRIMARY KEY,
+    name  TEXT NOT NULL,
+    kind  TEXT,                           -- 'jan_aushadhi' | 'generic' | 'retail'
+    city  TEXT,
+    area  TEXT,
+    lat   REAL,
+    lon   REAL
+);

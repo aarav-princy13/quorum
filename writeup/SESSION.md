@@ -57,3 +57,20 @@ Ask the owner the blocking questions (see below), then scope Phase 1.
 2. Privacy boundary — may drug *text* reach the backend, or fully on-device (bundle DB+maps)?
 3. On-device OCR engine — ML-Kit-text-first vs small-VLM-first vs benchmark bake-off.
 4. Drug/price data — assemble public NPPA/Jan-Aushadhi/CDSCO ourselves vs license a DB.
+
+### Round-2 answers (owner)
+1. Framework → **Flutter** (eventual app) — but **start with the Python backend first** ("so I understand the code first", no Flutter experience).
+2. Privacy → **image on-device, text to backend**.
+3. OCR engine → **benchmark bake-off first** on real receipts.
+4. Drug data → owner deferred to me → researched & wrote `DATA_SOURCES.md` (assemble open composition dataset + Jan Aushadhi + NPPA into SQLite; verify licensing before commercial).
+
+### Did (backend scaffold)
+- Wrote `DATA_SOURCES.md` (recommendation: 3-layer SQLite assembly, stdlib only).
+- Built a **runnable stdlib Python backend** under `code/`: `schema.sql`, seed CSVs, package `b2g/` (db, schedule, matcher, pipeline), `demo.py`.
+- `python3 code/demo.py` runs the full flow on a simulated OCR'd Chandigarh receipt → generic matches, savings, H/H1/X warnings + Rx-confirm flags, nearby pharmacies. Sample total savings **₹302.24**; writes `output/demo_result.json` + `demo_report.txt`. Verified working.
+
+### Next (proposed)
+- Ingest **real** Jan Aushadhi / NPPA / open-composition data into SQLite (replace tiny seed).
+- Harden brand-name matching (fuzzy) for real OCR text.
+- Plan the OCR benchmark (collect real receipts).
+- Later: stdlib `http.server` API layer, then the Flutter app.

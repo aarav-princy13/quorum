@@ -59,11 +59,13 @@ Turns image (or OCR text) directly into structured JSON line items in one pass. 
 2. **Phase 2 — Cross-platform app:** Flutter shell, on-device OCR (ML Kit/VLM), calls the backend for mapping/lookup. Image stays on device.
 3. **Phase 3 — Pilot + (later) pharmacy partnerships for live inventory.**
 
-## 7. Open decisions (need owner input)
-- App framework: Flutter vs React Native vs native.
-- Privacy boundary: is it OK for *drug names/text* to reach the backend, or must even mapping/lookup be fully on-device (bundle DB + maps SDK)?
-- On-device OCR engine: ML Kit-text-first vs small-VLM-first vs benchmark bake-off.
-- Drug/price data: assemble from public NPPA/Jan Aushadhi/CDSCO ourselves, or license a drug database?
+## 7. Decisions (resolved 2026-06-24)
+- App framework: **Flutter** (eventual app) — but **build the Python backend first**.
+- Privacy boundary: **image stays on-device; only extracted text reaches the backend.**
+- On-device OCR engine: **decide by benchmark** on real receipts (ML Kit vs Granite-Docling vs small VLM).
+- Drug/price data: **assemble open composition dataset + Jan Aushadhi + NPPA into SQLite** (see DATA_SOURCES.md); verify licensing before commercial.
+
+Backend scaffold built under `code/` (runnable `demo.py`); see code/README.md.
 
 ## Sources
 - https://www.ibm.com/new/announcements/granite-docling-end-to-end-document-conversion — Granite-Docling-258M (Jan 2026)

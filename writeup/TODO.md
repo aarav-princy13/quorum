@@ -8,12 +8,15 @@
 - [x] Architecture research + ARCHITECTURE.md (2026 OCR/VLM landscape)
 - [ ] **Owner to answer round 2** (framework, privacy boundary, OCR engine, drug-data source)
 
-## Phase 1 — Foundations (after round-2 decisions)
-- [ ] Scaffold `code/` (Python backend, stdlib + SQLite, no pandas)
-- [ ] Assemble brand→generic salt/strength + MRP dataset (NPPA / Jan Aushadhi / CDSCO) into SQLite
-- [ ] Build Schedule H/H1/X classification lookup
+## Phase 1 — Foundations
+- [x] Scaffold `code/` (Python backend, stdlib + SQLite, no pandas) — runnable `demo.py`
+- [x] Build Schedule H/H1/X classification lookup (`b2g/schedule.py`, warn + confirm Rx)
+- [x] Core pipeline: receipt line items → generic match + savings + safety (validated on sample)
+- [x] Decide drug-data approach → `DATA_SOURCES.md`
+- [ ] Assemble **real** brand→generic salt/strength + MRP into SQLite (Jan Aushadhi + NPPA + open composition dataset)
+- [ ] Harden brand-name matching (fuzzy) for messy OCR text
 - [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)
-- [ ] Desktop Python prototype: receipt image → line items → generic + savings (validate core before mobile)
+- [ ] (optional) stdlib `http.server` API layer so a client can call the pipeline
 
 ## Phase 2 — Core pipeline
 - [ ] Brand→generic mapping engine + savings calculation
