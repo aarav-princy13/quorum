@@ -96,25 +96,34 @@ def find_alternatives(conn, name):
         floor = OUTLIER_FLOOR_FRAC * statistics.median(prices)
         n_outliers = sum(1 for p in prices if p < floor)
 
+    # Authoritative (official Jan Aushadhi/NPPA) prices are verified-correct, so they
+    # are EXEMPT from the outlier floor — govt-subsidized prices are genuinely low.
     cheaper = [
         r for r in candidates
-        if r["id"] != matched["id"] and _row_unit_price(r) < m_unit and _row_unit_price(r) >= floor
+        if r["id"] != matched["id"] and _row_unit_price(r) < m_unit
+        and (_row_unit_price(r) >= floor or r["is_authoritative"])
     ]
     cheaper.sort(key=_row_unit_price)
 
-    alternatives = [
-        {
+    def to_dict(r):
+        return {
             "name": r["name"],
             "mrp_inr": r["mrp_inr"],
             "unit_price": _row_unit_price(r),
             "units": r["units"],
             "is_generic": bool(r["is_generic"]),
+            "is_authoritative": bool(r["is_authoritative"]),
             "source": r["source"],
             "pack": r["pack"],
         }
-        for r in cheaper[:25]
-    ]
+
+    alternatives = [to_dict(r) for r in cheaper[:25]]
     cheapest = alternatives[0] if alternatives else None
+    # Cheapest option backed by an official price (Jan Aushadhi/NPPA) — a trusted anchor.
+    # Computed over the FULL cheaper list (not the top-25) so an official price that
+    # ranks below many cheap generics is still surfaced.
+    auth_row = next((r for r in cheaper if r["is_authoritative"]), None)
+    cheapest_authoritative = to_dict(auth_row) if auth_row else None
 
     result = {
         "query": name,
@@ -131,6 +140,7 @@ def find_alternatives(conn, name):
         },
         "alternatives": alternatives,
         "cheapest": cheapest,
+        "cheapest_authoritative": cheapest_authoritative,
         "n_alternatives": len(cheaper),
         "n_outliers_excluded": n_outliers,
     }

@@ -16,8 +16,9 @@ CREATE TABLE IF NOT EXISTS drugs (
     units      INTEGER,                   -- comparable units in the pack (tablets/ml) for per-unit pricing
     unit_price REAL,                      -- mrp_inr / units (lets us compare unlike pack sizes fairly)
     is_generic INTEGER NOT NULL DEFAULT 0,-- 1 = generic / Jan Aushadhi, 0 = brand
+    is_authoritative INTEGER NOT NULL DEFAULT 0, -- 1 = official price (Jan Aushadhi/NPPA), 0 = open dataset
     schedule   TEXT    NOT NULL DEFAULT '',-- '' | 'H' | 'H1' | 'X' (Drugs & Cosmetics schedules)
-    source     TEXT                       -- provenance: 'janaushadhi' | 'nppa' | 'az-dataset' | 'seed'
+    source     TEXT                       -- provenance: 'janaushadhi' | 'nppa' | 'indian-medicine-dataset' | 'seed'
 );
 
 -- Lookups: by composition (for substitution) and by name (for receipt matching).

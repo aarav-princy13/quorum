@@ -111,3 +111,25 @@ Owner chose **#2 (salt-synonym normalizer)** — "clean up our dataset, methodic
   distinct compositions 10,946 → 10,900; 3,474 products quarantined. Full record in **DATA_CLEANING.md**.
 - Honest takeaway: small grouping gain (data was clean); lasting value = safety guard + robust parser +
   cross-source synonym infra for when Jan Aushadhi/NPPA are added.
+
+## 2026-06-25 — Session 1 (cont. 4): Authoritative Jan Aushadhi prices
+
+Owner: "continue" with authoritative prices (Jan Aushadhi + NPPA).
+- **Investigated sources first** (the methodical pattern). NPPA & Jan Aushadhi are PDF/portal-locked;
+  no CSV/JSON mirrors. But found the Jan Aushadhi site is a React SPA with a **public JSON API on
+  port 8443** (discovered the host via the page's CSP `connect-src`; payload shape read from the JS
+  bundle). Endpoint: `POST /api/v1/admin/product/getAllProductForWeb`.
+- **Built `code/ingest_janaushadhi.py`** (stdlib json/sqlite/re): fetch → parse free-text `genericName`
+  into (salt, strength, form) with **positional salt↔dose pairing** (handles both combo layouts),
+  skip unpriced rows → insert as `is_authoritative=1, is_generic=1, source='janaushadhi'`.
+  Result: **2,052 priced products, ~950 match brand comps, 1,572 anchors.**
+- **Cross-source fixes:** added PK-neutral salt-form folding (hydrochloride only — metformin
+  hydrochloride→metformin; succinate/tartrate still separate, verified). Added `is_authoritative`.
+- **Matcher upgrades:** authoritative prices **exempt from the outlier floor** (govt prices are
+  genuinely low); report shows a **✓Jan Aushadhi (govt)** anchor. Fixed a bug where the anchor was
+  computed over the truncated top-25 (now over the full candidate list — Azithral now shows the
+  official ₹13.13/unit alongside the cheapest market option).
+- **NPPA:** server-rendered CMS + gazette PDFs + ASP.NET portal → not cleanly stdlib-ingestable.
+  Documented options (data.gov.in key / PDF dep / curated subset); **deferred**. Jan Aushadhi already
+  covers the generic-price layer.
+- Verified: seed regression, safety rechecks, realistic receipt (Telma/Pan anchor at ~₹1.2/unit).

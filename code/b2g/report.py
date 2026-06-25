@@ -32,6 +32,8 @@ def build_report(result, pharmacies=None, title="receipt analysis"):
         cheap = it["cheapest_alternative"]
         if cheap:
             tag = "generic" if cheap["is_generic"] else "cheaper option"
+            if cheap.get("is_authoritative"):
+                tag += " ✓Jan Aushadhi (govt)"
             n_alt = it.get("n_alternatives", 0)
             more = f"  (+{n_alt - 1} other cheaper option(s))" if n_alt > 1 else ""
             lines.append(
@@ -42,6 +44,13 @@ def build_report(result, pharmacies=None, title="receipt analysis"):
             lines.append(
                 f"      savings to buy the same quantity (x{it['qty']}): {rupees(it['savings_inr_line'])}"
             )
+            # If the cheapest isn't itself official, surface the official price as a trusted anchor.
+            auth = it.get("cheapest_authoritative")
+            if auth and not cheap.get("is_authoritative"):
+                lines.append(
+                    f"      ✓ official Jan Aushadhi price: {rupees(auth['unit_price'])}/unit"
+                    f"  ({auth['name']})"
+                )
         else:
             lines.append("    → no cheaper same-form equivalent found")
 

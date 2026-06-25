@@ -16,7 +16,10 @@
 - [x] Ingest **real** open dataset (~246k products, 10,946 compositions) into SQLite (`ingest.py`)
 - [x] Salt-based Schedule H/H1/X classifier; same-form + per-unit + outlier-floor matching
 - [x] Salt/strength canonicalization (`b2g/normalize.py`) + robust multi-paren parser; **evidence-first** (see DATA_CLEANING.md). Found the dataset already salt-consistent; real win = unknown-dose safety guard (3,474 products quarantined) + cross-source synonym infra
-- [ ] Add **authoritative prices**: parse Jan Aushadhi/PMBJP + NPPA into the catalog (synonym map pays off here)
+- [x] Add **authoritative Jan Aushadhi/PMBJP prices** via its public JSON API (`ingest_janaushadhi.py`): 2,052 priced products, ~950 match brand comps, 1,572 anchors; shown as ✓Jan Aushadhi, exempt from outlier floor
+- [ ] **NPPA ceiling prices** — investigated, PDF/portal-locked (no clean API). Options: data.gov.in key / PDF dep (needs approval) / curated subset. Deferred (see DATA_SOURCES.md)
+- [ ] Improve Jan Aushadhi coverage (some commons miss: e.g. amox-clav 625 single; combo strength alignment edge cases)
+- [ ] Use Jan Aushadhi `getNearByKendra` API for real nearby-Kendra locations (replaces seed pharmacies)
 - [ ] Validate the curated H/H1/X salt lists against the official gazette
 - [ ] Harden brand-name matching (fuzzy) for messy OCR text (e.g. "Glycomet 500 Tablet" missed)
 - [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)

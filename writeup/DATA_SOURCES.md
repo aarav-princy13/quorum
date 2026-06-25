@@ -25,15 +25,36 @@ Plus a separate **Schedule H/H1/X** lookup for the safety warning.
 3. **Before commercial launch:** replace/verify any non-commercially-licensed data (esp. 1mg); consider licensing a curated drug DB for the salt-mapping (production reliability + liability).
 4. **Pharmacy locations:** start with a maps API + the Jan Aushadhi Kendra directory; live inventory waits for partnerships (Phase 3).
 
-## Status — what's ingested (2026-06-24)
-- **Ingested** the open Indian Medicine Dataset (`junioralive/Indian-Medicine-Dataset`,
-  ~254k rows) into `data/b2g.db` via `code/ingest.py` (stdlib only). Result:
-  **246,068 products, 10,946 distinct compositions**. This is the brand→composition→price layer.
-- **Schedule H/H1/X** derived from a curated salt list (`b2g/schedule.py`) since the dataset
-  has no schedule column — H1/X (overdose/abuse risk) flagged reliably; H partial.
-- **Savings** computed within the dataset by same-composition + same-form, per-unit price.
-- **NOT yet ingested:** Jan Aushadhi/PMBJP official generic prices, NPPA ceiling prices.
-  These remain the authoritative-price layer to add (PDF/portal parsing).
+## Status — what's ingested
+- **Open Indian Medicine Dataset** (`junioralive/Indian-Medicine-Dataset`, ~254k rows) →
+  `data/b2g.db` via `code/ingest.py` (stdlib). **246,068 products, ~10,900 compositions** —
+  the brand→composition→price layer.
+- **Jan Aushadhi / PMBJP official prices (AUTHORITATIVE)** → via `code/ingest_janaushadhi.py`.
+  **2,052 priced products**, of which **~950 match an existing brand composition+form** and
+  give **1,572 distinct authoritative anchors**. Marked `is_authoritative=1`, `source='janaushadhi'`.
+- **Schedule H/H1/X** from a curated salt list (`b2g/schedule.py`); H1/X reliable, H partial.
+- **Savings** computed by same-composition + same-form, per-unit; official prices are
+  exempt from the outlier floor and surfaced as a trusted anchor.
+
+### How the Jan Aushadhi data was obtained (reproducible)
+The official site is a React SPA; its product list comes from a public JSON API on **port 8443**
+(found via the page's `Content-Security-Policy` `connect-src`). It needs a POST with pagination:
+```
+curl -s -X POST -H 'Content-Type: application/json' -H 'Referer: https://janaushadhi.gov.in/' \
+  -d '{"pageIndex":0,"pageSize":3000,"searchText":"","orderBy":"asc","columnName":"genericName"}' \
+  'https://janaushadhi.gov.in:8443/api/v1/admin/product/getAllProductForWeb'
+```
+Returns `responseBody.newProductResponsesList[]` with `genericName, groupName, unitSize, mrp`.
+(The same API has `getNearByKendra` — useful for real nearby-pharmacy locations later.)
+
+### NPPA — investigated, currently blocked
+NPPA ceiling prices are **not cleanly auto-ingestable** stdlib-only: `nppa.gov.in` is a
+server-rendered CMS with prices in **gazette PDFs**; `nppaimis.nic.in` is an old ASP.NET
+search portal (viewstate); the `data.gov.in` API needs a registered key. Realistic paths:
+(a) a registered data.gov.in key if an NPPA price resource exists, (b) a PDF-parsing dependency
+(needs approval — violates stdlib-only), or (c) a small curated subset. **Deferred.** Note:
+Jan Aushadhi prices are typically at/below NPPA ceilings, so the generic-price layer is covered;
+NPPA would mainly add a brand-price *ceiling* for validation.
 
 ## Known data-quality issues (open dataset)
 - **Price outliers / data-entry errors** (e.g. per-tablet price entered as per-strip) →

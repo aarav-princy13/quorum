@@ -39,6 +39,7 @@ def process_receipt(conn, line_items):
             "found": alt["matched"] is not None,
             "matched": alt["matched"],
             "cheapest_alternative": alt["cheapest"],
+            "cheapest_authoritative": alt.get("cheapest_authoritative"),
             "alternatives": alt["alternatives"],
             "n_alternatives": alt.get("n_alternatives", 0),
             "savings_inr_per_unit": alt.get("savings_per_unit", 0.0),

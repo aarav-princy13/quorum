@@ -39,13 +39,25 @@ _SALT_SYNONYMS = {
 }
 
 
+# PK-NEUTRAL salt forms safe to drop so base ("metformin") and salt
+# ("metformin hydrochloride") group together. Deliberately tiny: ONLY forms that
+# do not change release/bioavailability. We do NOT strip succinate/tartrate/etc.
+# (e.g. metoprolol succinate vs tartrate are NOT interchangeable).
+_NEUTRAL_SALT_FORMS = ("hydrochloride", "dihydrochloride", "hcl")
+
+
 def canonical_salt(salt):
-    """Canonicalize one salt name (spelling/synonym/qualifier only; no salt-form merge)."""
+    """Canonicalize one salt name (spelling/synonym/qualifier/PK-neutral-form only)."""
     s = re.sub(r"\s+", " ", (salt or "").strip().lower())
     # drop a trailing pharmacopoeia qualifier word
     for q in _QUALIFIERS:
         if s.endswith(" " + q):
             s = s[: -len(q) - 1].strip()
+            break
+    # drop a trailing PK-neutral salt form (hydrochloride only — see note above)
+    for f in _NEUTRAL_SALT_FORMS:
+        if s.endswith(" " + f):
+            s = s[: -len(f) - 1].strip()
             break
     return _SALT_SYNONYMS.get(s, s)
 
