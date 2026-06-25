@@ -49,10 +49,17 @@ In India, branded medicines cost 50–85% more than therapeutically-identical ge
 - Prefer **Python standard library** and lightweight deps. **No pandas.** Justify & get approval before adding heavy libraries.
 - Keep code in `code/`, generated artifacts in `output/`, docs in `writeup/`.
 
-## 9. Open decisions (blocking — see SESSION.md "Questions for owner")
-- Form factor: native mobile app vs web vs CLI/Python prototype first?
-- OCR approach: offline (Tesseract) vs cloud (Google Vision) vs LLM vision?
-- Pharmacy data source: Google Places + govt data vs pharmacy partnerships vs crowd-sourced?
-- Safety feature strictness: warn-only vs require prescription confirmation?
-- Drug/price database source for brand→generic mapping.
+## 9. Decisions
+**Resolved (2026-06-24):**
+- Target: **cross-platform iOS + Android** app + **stateless Python backend** (no UI).
+- Privacy: **receipt image processed on-device**, never uploaded (see ARCHITECTURE.md).
+- OCR: **not Tesseract** — modern on-device OCR/VLM (ML Kit baseline; benchmark Granite-Docling/small VLM).
+- Nearby data: **locations-only MVP**; pharmacy partnerships later.
+- Safety: **warn + confirm prescription** before showing purchase/nearby options.
+
+**Still open (see ARCHITECTURE.md §7):**
+- App framework (Flutter / React Native / native).
+- Privacy boundary — may drug *text* reach the backend, or fully on-device?
+- On-device OCR engine choice (decide via benchmark).
+- Drug/price data: assemble public sources vs license a DB.
 - MVP city + monetization model.

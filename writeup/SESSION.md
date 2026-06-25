@@ -33,9 +33,27 @@ Ran `git init` and will make an initial commit capturing these docs (setup was e
 ### Next step
 Ask the owner the blocking questions (see below), then scope Phase 1.
 
-### Questions for owner (blocking)
-1. Form factor for first build — native mobile app, web app, or a Python prototype of the pipeline first?
-2. OCR approach — offline/basic (Tesseract) vs cloud (Google Vision) vs LLM vision? (affects "basic libraries only" constraint)
-3. Nearby-pharmacy data — Google Places + govt data (locations only), pharmacy partnerships, or crowd-sourced inventory?
-4. Safety feature — warn-only, or require prescription confirmation before showing purchase options?
-5. (minor) MVP city, and monetization model (free/info, lead-gen to pharmacies, ads, subscription)?
+### Questions for owner (blocking) — ANSWERED
+1. Form factor → **both iPhone + Android** (cross-platform); likes a **backend/no-UI Python pipeline** but wants to keep evaluating; wants **on-device image processing for privacy**; explore **IBM Docling / recent OCR LLMs**.
+2. OCR → **Tesseract rejected** (tried before, weak/inconsistent). Use modern on-device OCR/VLM.
+3. Nearby-pharmacy data → **locations-only first**; partnerships later but owner is **not in India / lacks local contacts**.
+4. Safety → **Warn + confirm Rx**.
+
+## 2026-06-24 — Session 1 (cont.): Architecture research
+
+### Did
+- Re-ran OCR/VLM research framed to surface **newest 2026 models** (owner flagged my memory of model names as stale — verify, don't recall).
+- Wrote `ARCHITECTURE.md`: privacy-driven split (on-device OCR; stateless Python backend gets only text), on-device OCR options, framework comparison, phased build, data sources.
+- Fixed git author → **Aarav <aarav10a1@gmail.com>**, removed Co-Authored-By trailer (saved as memory).
+
+### Current-model landscape (mid-2026, from web — must benchmark on real receipts)
+- **On-device text OCR:** Google **ML Kit Text Recognition v2** (cross-platform, on-device, supports **Devanagari**) = baseline. Apple Vision = iOS-only.
+- **On-device small VLMs (structure):** IBM **Granite-Docling-258M** (Jan 2026, Apache-2.0, Apple Silicon/MLX), SmolVLM-256M, MiniCPM-V (~3B, phone-capable), MagicVL-2B (mobile), Phi-4-multimodal, Pixtral.
+- **Cloud-only (higher acc., breaks privacy):** dots.ocr, Qwen3-VL, GLM-4.5V, DeepSeek-VL2, Nemotron-3-Nano-Omni — opt-in fallback at most.
+- **Leaning:** Flutter app + ML Kit baseline, benchmark Granite-Docling/small-VLM on real receipts. Decide OCR engine empirically.
+
+### Next open decisions (asking owner now)
+1. App framework — Flutter / React Native / native.
+2. Privacy boundary — may drug *text* reach the backend, or fully on-device (bundle DB+maps)?
+3. On-device OCR engine — ML-Kit-text-first vs small-VLM-first vs benchmark bake-off.
+4. Drug/price data — assemble public NPPA/Jan-Aushadhi/CDSCO ourselves vs license a DB.
