@@ -37,7 +37,7 @@ def main():
     n_drugs, n_ph = load_seed(conn)
 
     result = process_receipt(conn, SAMPLE_RECEIPT)
-    pharmacies = nearby_pharmacies(conn, city="Chandigarh")
+    pharmacies = nearby_pharmacies(conn, lat=30.7411, lon=76.7820)
     report = build_report(result, pharmacies, title="receipt analysis (DEMO / illustrative seed prices)")
     print(report)
 

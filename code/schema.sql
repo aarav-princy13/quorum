@@ -28,11 +28,13 @@ CREATE INDEX IF NOT EXISTS idx_drugs_name_norm     ON drugs(name_norm);
 
 -- Nearby pharmacies — locations only for the MVP (no live inventory yet).
 CREATE TABLE IF NOT EXISTS pharmacies (
-    id    INTEGER PRIMARY KEY,
-    name  TEXT NOT NULL,
-    kind  TEXT,                           -- 'jan_aushadhi' | 'generic' | 'retail'
-    city  TEXT,
-    area  TEXT,
-    lat   REAL,
-    lon   REAL
+    id     INTEGER PRIMARY KEY,
+    name   TEXT NOT NULL,
+    kind   TEXT,                          -- 'jan_aushadhi' | 'generic' | 'retail'
+    city   TEXT,
+    area   TEXT,
+    lat    REAL,
+    lon    REAL,
+    source TEXT,                          -- 'openstreetmap' | 'seed'
+    osm_id INTEGER                        -- OSM node id (provenance / dedup)
 );

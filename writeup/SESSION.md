@@ -133,3 +133,20 @@ Owner: "continue" with authoritative prices (Jan Aushadhi + NPPA).
   Documented options (data.gov.in key / PDF dep / curated subset); **deferred**. Jan Aushadhi already
   covers the generic-price layer.
 - Verified: seed regression, safety rechecks, realistic receipt (Telma/Pan anchor at ~₹1.2/unit).
+
+## 2026-06-25 — Session 1 (cont. 5): Real pharmacy locations
+
+Owner: skip NPPA; next = real pharmacy locations (my recommendation too — it's the make-or-break
+feature, still on fake seed data, and pairs with the JA prices).
+- Tried the Jan Aushadhi Kendra endpoints (`getNearByKendra`, `getAllKendra`) — **500'd** on every
+  guessed payload (undocumented). Methodical call: don't fight a flaky endpoint when a robust,
+  documented, **neutral** source exists.
+- Pivoted to **OpenStreetMap Overpass API** (neutral = any pharmacy, the app's actual wedge).
+  Quirk: needs a **User-Agent** header or it returns 406.
+- Built `code/ingest_pharmacies.py` (stdlib urllib, retries, JSON-validated): fetch pharmacy nodes
+  near a lat/lon → store real locations in the `pharmacies` table (replaces seed). Added
+  `haversine_km` (b2g/util.py) and rewrote `nearby_pharmacies()` to rank by real distance.
+- Result: **15 real tricity pharmacies**, distance-ranked (Verma Medical Hall 1.36 km → Panchkula
+  12.6 km). Report shows distance + ✓ marker for Jan Aushadhi Kendras.
+- Honest caveat: **OSM pharmacy coverage in India is sparse**; production needs Google Places or the
+  Jan Aushadhi Kendra directory. Now every layer (catalog, official prices, locations) is REAL data.

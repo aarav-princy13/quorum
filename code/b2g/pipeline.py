@@ -58,19 +58,26 @@ def process_receipt(conn, line_items):
     return {"items": items, "summary": summary}
 
 
-def nearby_pharmacies(conn, city=None, kinds=("jan_aushadhi", "generic")):
-    """Locations-only nearby lookup for the MVP (no live inventory).
+def nearby_pharmacies(conn, lat=None, lon=None, limit=8, kinds=None):
+    """Locations-only nearby lookup (no live inventory).
 
-    Filters by city and pharmacy kind. Real geo-distance ranking comes later.
+    Neutral: returns any nearby pharmacy. When lat/lon are given, ranks by real
+    great-circle distance (km) and returns the closest `limit`; Jan Aushadhi
+    Kendras are tagged so the caller can highlight them.
     """
+    from .util import haversine_km
+
     sql = "SELECT * FROM pharmacies"
-    clauses, params = [], []
-    if city:
-        clauses.append("city = ?")
-        params.append(city)
+    params = []
     if kinds:
-        clauses.append(f"kind IN ({','.join('?' for _ in kinds)})")
+        sql += f" WHERE kind IN ({','.join('?' for _ in kinds)})"
         params.extend(kinds)
-    if clauses:
-        sql += " WHERE " + " AND ".join(clauses)
-    return [dict(r) for r in conn.execute(sql, params).fetchall()]
+    rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
+
+    if lat is not None and lon is not None:
+        for r in rows:
+            r["distance_km"] = (round(haversine_km(lat, lon, r["lat"], r["lon"]), 2)
+                                if r["lat"] is not None and r["lon"] is not None else None)
+        rows = [r for r in rows if r["distance_km"] is not None]
+        rows.sort(key=lambda r: r["distance_km"])
+    return rows[:limit]

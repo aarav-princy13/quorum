@@ -21,8 +21,12 @@ python3 code/ingest_janaushadhi.py                       # adds authoritative ro
 
 python3 code/query.py                                    # sample receipt
 python3 code/query.py "Telma 40 Tablet" "Pan 40 Tablet"  # shows the ✓Jan Aushadhi anchor
+
+# 4) Real nearby pharmacy locations from OpenStreetMap (default: Chandigarh, 16 km):
+python3 code/ingest_pharmacies.py
 ```
-Note: `ingest.py` rebuilds the DB from scratch, so always run `ingest_janaushadhi.py` after it.
+Note: `ingest.py` rebuilds the DB from scratch, so always run `ingest_janaushadhi.py` and
+`ingest_pharmacies.py` after it (in that order).
 Outputs are written to `output/` (`*_result.json`, `*_report.txt`).
 
 ## Layout
@@ -40,6 +44,7 @@ code/
     report.py         text rendering of a result
   ingest.py           build data/b2g.db from the real dataset CSV (open data)
   ingest_janaushadhi.py  layer in OFFICIAL Jan Aushadhi prices (authoritative)
+  ingest_pharmacies.py   real nearby pharmacy locations from OpenStreetMap (Overpass)
   analyze_salts.py    review tool: surface candidate salt variants for the synonym map
   demo.py             end-to-end demo on seed data
   query.py            query the real DB with brand names

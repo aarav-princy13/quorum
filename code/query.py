@@ -42,7 +42,8 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     result = process_receipt(conn, line_items)
-    pharmacies = nearby_pharmacies(conn, city="Chandigarh")
+    # stand-in for the app passing the user's GPS location (Chandigarh, Sector 17)
+    pharmacies = nearby_pharmacies(conn, lat=30.7411, lon=76.7820)
     report = build_report(result, pharmacies, title="receipt analysis (real catalog)")
     print(report)
     conn.close()

@@ -66,9 +66,13 @@ def build_report(result, pharmacies=None, title="receipt analysis"):
 
     if pharmacies:
         lines.append("")
-        lines.append("  Nearby generic-friendly pharmacies (locations-only MVP):")
+        lines.append("  Nearest pharmacies (locations-only MVP; ✓ = Jan Aushadhi Kendra):")
         for p in pharmacies:
-            lines.append(f"    - {p['name']} [{p['kind']}], {p['area']}, {p['city']}")
+            dist = f"{p['distance_km']:>5} km" if p.get("distance_km") is not None else "       "
+            mark = " ✓" if p.get("kind") == "jan_aushadhi" else "  "
+            where = p.get("area") or p.get("city") or ""
+            tail = f"  ({where})" if where else ""
+            lines.append(f"    {dist} {mark} {p['name']}{tail}")
 
     lines.append("")
     lines.append("  Note: suggestions are informational. Confirm substitutions with a")

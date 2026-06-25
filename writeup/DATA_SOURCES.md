@@ -35,6 +35,12 @@ Plus a separate **Schedule H/H1/X** lookup for the safety warning.
 - **Schedule H/H1/X** from a curated salt list (`b2g/schedule.py`); H1/X reliable, H partial.
 - **Savings** computed by same-composition + same-form, per-unit; official prices are
   exempt from the outlier floor and surfaced as a trusted anchor.
+- **Nearby pharmacies (REAL)** → via `code/ingest_pharmacies.py` from the **OpenStreetMap
+  Overpass API** (neutral: any pharmacy, Jan Aushadhi tagged). Stored with lat/lon; the
+  pipeline ranks by real great-circle distance (`haversine_km`). Caveat: **OSM pharmacy
+  coverage in India is sparse** (~15 mapped in the Chandigarh tricity) — real but incomplete;
+  production would use Google Places or the Jan Aushadhi Kendra directory for fuller coverage.
+  (Overpass needs a User-Agent header, else it returns 406.)
 
 ### How the Jan Aushadhi data was obtained (reproducible)
 The official site is a React SPA; its product list comes from a public JSON API on **port 8443**
