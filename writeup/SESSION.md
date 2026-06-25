@@ -95,3 +95,19 @@ Owner chose **"ingest real drug data"**.
 ### Open data caveats (documented in DATA_SOURCES.md)
 - Open dataset has price outliers, salt-spelling variants, unspecified license → prototype only.
 - Authoritative Jan Aushadhi/NPPA prices still to be added.
+
+## 2026-06-24 — Session 1 (cont. 3): Data cleaning (salt/strength canonicalization)
+
+Owner chose **#2 (salt-synonym normalizer)** — "clean up our dataset, methodically, nothing unfinished."
+- **Analyzed first** (`code/analyze_salts.py` + queries) instead of assuming. Empirical finding
+  **overturned the premise**: the dataset is already salt-consistent (one spelling per drug;
+  pharmacopoeia qualifiers = 1 product). A synonym map is a near-no-op on this single source.
+- **Real dirt found:** 1.4% of products had missing/junk doses (`na`, parser artifacts) — and a
+  multi-paren composition-parsing bug.
+- **Built `b2g/normalize.py`** (canonical salt + strength), a **robust multi-paren parser**, and a
+  **`strength_known` guard** that excludes unknown-dose products from being recommended (safety).
+- **Deliberately did NOT merge salt forms** (metoprolol succinate vs tartrate) — verified they stay separate.
+- Verified: unit tests on the normalizer pass; matching an unknown-dose product offers no substitute;
+  distinct compositions 10,946 → 10,900; 3,474 products quarantined. Full record in **DATA_CLEANING.md**.
+- Honest takeaway: small grouping gain (data was clean); lasting value = safety guard + robust parser +
+  cross-source synonym infra for when Jan Aushadhi/NPPA are added.

@@ -7,8 +7,9 @@ CREATE TABLE IF NOT EXISTS drugs (
     id         INTEGER PRIMARY KEY,
     name       TEXT    NOT NULL,          -- product/brand name as printed, e.g. "Crocin 500"
     name_norm  TEXT,                      -- normalized name for fast/tolerant lookup (lowercased, depunctuated)
-    salt       TEXT    NOT NULL,          -- normalized active composition, e.g. "paracetamol"
-    strength   TEXT    NOT NULL,          -- e.g. "500mg" (kept as text; strengths vary in form)
+    salt       TEXT    NOT NULL,          -- canonicalized active composition, e.g. "paracetamol"
+    strength   TEXT    NOT NULL,          -- canonicalized dose, e.g. "500mg" (may be '' if unknown)
+    strength_known INTEGER NOT NULL DEFAULT 1, -- 0 = dose missing/unparseable -> not offered as a substitute
     form       TEXT,                      -- tablet / syrup / capsule ...
     mrp_inr    REAL,                      -- price in INR for the given pack
     pack       TEXT,                      -- pack description, e.g. "15 tablets"

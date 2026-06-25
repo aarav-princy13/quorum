@@ -78,7 +78,9 @@ def find_alternatives(conn, name):
 
     # Pull every same-composition, same-form product (to compute a robust price
     # floor and to count real alternatives), then filter in Python.
-    sql = ("SELECT * FROM drugs WHERE salt = ? AND strength = ? "
+    # strength_known = 1 excludes products whose dose we couldn't verify — never
+    # recommend a substitute when we don't know its strength.
+    sql = ("SELECT * FROM drugs WHERE salt = ? AND strength = ? AND strength_known = 1 "
            "AND COALESCE(unit_price, mrp_inr) IS NOT NULL ")
     params = [matched["salt"], matched["strength"]]
     if matched["form"]:

@@ -24,14 +24,23 @@ code/
   b2g/                the backend package
     db.py             connect / build schema / load + normalize seed
     util.py           pack-size -> unit-count parsing
+    normalize.py      salt/strength canonicalization (safe synonym + qualifier folding)
     schedule.py       Schedule H/H1/X classification (salt-based) + Rx rule
     matcher.py        brand -> salt+strength -> cheaper SAME-FORM equivalents (per-unit)
     pipeline.py       receipt line items -> per-item results + summary; nearby lookup
     report.py         text rendering of a result
   ingest.py           build data/b2g.db from the real dataset CSV
+  analyze_salts.py    review tool: surface candidate salt variants for the synonym map
   demo.py             end-to-end demo on seed data
   query.py            query the real DB with brand names
 ```
+
+## Data-quality safeguards (see writeup/DATA_CLEANING.md)
+- **Canonicalization** — salts/strengths folded for spelling, pharmacopoeia qualifiers
+  (ip/bp/usp) and a curated cross-source synonym map; **never** merges distinct salt forms
+  (succinate vs tartrate stay separate).
+- **Unknown-dose guard** — products with no parseable strength (`strength_known = 0`) are
+  matched but never offered as a substitute.
 
 ## How the matching stays honest
 - **Same composition AND same form** — a tablet is never substituted by an injection.

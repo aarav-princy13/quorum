@@ -27,46 +27,56 @@ ROOT = CODE_DIR.parent
 RAW_CSV = ROOT / "data" / "raw" / "indian_medicine_data.csv"
 DB_PATH = ROOT / "data" / "b2g.db"
 
-from b2g.matcher import normalize             # noqa: E402
-from b2g.schedule import schedule_for_salts    # noqa: E402
-from b2g.util import parse_pack_units          # noqa: E402
+from b2g.matcher import normalize                        # noqa: E402
+from b2g.schedule import schedule_for_salts               # noqa: E402
+from b2g.util import parse_pack_units                     # noqa: E402
+from b2g.normalize import canonical_salt, canonical_strength  # noqa: E402
 
-# "Amoxycillin  (500mg)" -> ("amoxycillin", "500mg")
-_COMP_RE = re.compile(r"^\s*(.*?)\s*\(\s*(.*?)\s*\)\s*$")
+_PAREN_RE = re.compile(r"\(([^)]*)\)")
 
-_INSERT = ("INSERT INTO drugs (name,name_norm,salt,strength,form,mrp_inr,pack,"
-           "units,unit_price,is_generic,schedule,source) "
-           "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+_INSERT = ("INSERT INTO drugs (name,name_norm,salt,strength,strength_known,form,"
+           "mrp_inr,pack,units,unit_price,is_generic,schedule,source) "
+           "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
 
 
 def parse_component(raw):
-    """Split one composition cell into (salt, strength). Returns None if empty."""
+    """Split one composition cell into (salt, strength). Returns None if empty.
+
+    Robust to multiple parens: salt = text before the first '(', strength = the
+    LAST parenthesized group, e.g. "Cholecalciferol (Vitamin D3) (1000IU)" ->
+    ("cholecalciferol", "1000IU").
+    """
     raw = (raw or "").strip()
     if not raw:
         return None
-    m = _COMP_RE.match(raw)
-    if m:
-        salt = re.sub(r"\s+", " ", m.group(1)).strip().lower()
-        strength = re.sub(r"\s+", "", m.group(2)).strip().lower()
-    else:
-        salt = re.sub(r"\s+", " ", raw).strip().lower()
-        strength = ""
+    groups = _PAREN_RE.findall(raw)
+    salt = re.sub(r"\s+", " ", re.split(r"\(", raw, 1)[0]).strip().lower()
+    strength = groups[-1].strip().lower() if groups else ""
     return (salt, strength) if salt else None
 
 
 def composition_key(c1, c2):
-    """Build canonical (salt, strength) for a product from up to two components.
+    """Build canonical (salt, strength, strength_known) for a product.
 
-    Components are sorted by salt so "A+B" and "B+A" collapse to one key — that's
-    what makes same-composition products group together for substitution.
+    Salts/strengths are canonicalized (b2g.normalize) and components sorted by
+    salt so "A+B" and "B+A" collapse to one key. strength_known is False if ANY
+    component lacks a real (digit-bearing) dose.
     """
     comps = [c for c in (parse_component(c1), parse_component(c2)) if c]
     if not comps:
         return None
-    comps.sort(key=lambda cs: cs[0])
-    salt = "+".join(s for s, _ in comps)
-    strength = "+".join(st for _, st in comps)
-    return salt, strength
+    known = True
+    norm = []
+    for salt, strength in comps:
+        cs = canonical_salt(salt)
+        cst = canonical_strength(strength)
+        if not cst:
+            known = False
+        norm.append((cs, cst))
+    norm.sort(key=lambda cs: cs[0])
+    salt = "+".join(s for s, _ in norm)
+    strength = "+".join(st for _, st in norm)
+    return salt, strength, known
 
 
 def detect_form(name, pack):
@@ -118,7 +128,7 @@ def main():
             if key is None:
                 skipped_nocomp += 1
                 continue
-            salt, strength = key
+            salt, strength, known = key
             name = (row.get("name") or "").strip()
             pack = (row.get("pack_size_label") or "").strip()
             mrp = to_float(row.get(price_col))
@@ -127,8 +137,9 @@ def main():
             sched = schedule_for_salts(salt)
             is_generic = 1 if normalize(name).startswith(salt.split("+")[0][:6]) else 0
             batch.append((
-                name, normalize(name), salt, strength, detect_form(name, pack),
-                mrp, pack, units, unit_price, is_generic, sched, "indian-medicine-dataset",
+                name, normalize(name), salt, strength, 1 if known else 0,
+                detect_form(name, pack), mrp, pack, units, unit_price,
+                is_generic, sched, "indian-medicine-dataset",
             ))
             if len(batch) >= 5000:
                 conn.executemany(_INSERT, batch)
@@ -141,9 +152,11 @@ def main():
 
     n_comp = conn.execute("SELECT COUNT(DISTINCT salt || '|' || strength) FROM drugs").fetchone()[0]
     n_flag = conn.execute("SELECT COUNT(*) FROM drugs WHERE schedule != ''").fetchone()[0]
+    n_unk = conn.execute("SELECT COUNT(*) FROM drugs WHERE strength_known = 0").fetchone()[0]
     print(f"read {read} rows -> inserted {inserted}"
           f" (skipped {skipped_disc} discontinued, {skipped_nocomp} no-composition)")
-    print(f"distinct compositions: {n_comp} · schedule-flagged products: {n_flag}")
+    print(f"distinct compositions: {n_comp} · schedule-flagged: {n_flag}"
+          f" · unknown-dose (not offered as substitutes): {n_unk}")
     print(f"DB: {DB_PATH} ({DB_PATH.stat().st_size // (1024*1024)} MB)")
     conn.close()
 

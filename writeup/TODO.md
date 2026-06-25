@@ -15,8 +15,8 @@
 - [x] Decide drug-data approach → `DATA_SOURCES.md`
 - [x] Ingest **real** open dataset (~246k products, 10,946 compositions) into SQLite (`ingest.py`)
 - [x] Salt-based Schedule H/H1/X classifier; same-form + per-unit + outlier-floor matching
-- [ ] Add **authoritative prices**: parse Jan Aushadhi/PMBJP + NPPA into the catalog
-- [ ] Salt-name normalizer / synonym map (unify Amoxycillin/Amoxicillin etc.)
+- [x] Salt/strength canonicalization (`b2g/normalize.py`) + robust multi-paren parser; **evidence-first** (see DATA_CLEANING.md). Found the dataset already salt-consistent; real win = unknown-dose safety guard (3,474 products quarantined) + cross-source synonym infra
+- [ ] Add **authoritative prices**: parse Jan Aushadhi/PMBJP + NPPA into the catalog (synonym map pays off here)
 - [ ] Validate the curated H/H1/X salt lists against the official gazette
 - [ ] Harden brand-name matching (fuzzy) for messy OCR text (e.g. "Glycomet 500 Tablet" missed)
 - [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)

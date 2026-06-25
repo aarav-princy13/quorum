@@ -39,8 +39,11 @@ Plus a separate **Schedule H/H1/X** lookup for the safety warning.
 - **Price outliers / data-entry errors** (e.g. per-tablet price entered as per-strip) →
   mitigated with a median-based outlier floor in `matcher.py`, but real cleaning needs
   authoritative NPPA/Jan Aushadhi prices.
-- **Salt spelling variants** (Amoxycillin vs Amoxicillin) aren't unified → can split a
-  composition group. Needs a salt-name normalizer / synonym map.
+- **Salt spelling variants** — investigated empirically (see **DATA_CLEANING.md**): the
+  dataset is already salt-consistent, so a synonym map is a near-no-op now but is in place
+  (`b2g/normalize.py`) for cross-source merging later.
+- **Missing/junk doses** (1.4%) — now flagged `strength_known = 0` and excluded from
+  substitution recommendations (safety).
 - **License unspecified upstream** → prototype use only; verify before commercial.
 
 ## Risks
