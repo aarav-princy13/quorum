@@ -166,3 +166,21 @@ Owner: do fuzzy name matching next.
 - Report flags fuzzy hits as `≈ approx match: <name>` for user verification.
 - Added regression suite `code/test_matching.py` (asserts composition + safety) → **PASS, 0 wrong**.
   10/10 functional + safety negatives; the one deliberate miss is an OCR brand typo (`Crocln`) = safe.
+
+## 2026-06-25 — Session 1 (cont. 7): Secure HTTPS API
+
+Owner: build the API; **maximum security** — rate-limited + "hidden" + asked for more ideas.
+Decisions (asked): **API key + HMAC signing**, **HTTPS in the server now**, **rate-limit per key + IP**.
+- Planned it (writeup/API_DESIGN.md), flagged honestly that stdlib `http.server` still needs a
+  reverse proxy in production.
+- Built (stdlib only): `b2g/security.py` (HMAC verify + token-bucket limiter + nonce cache),
+  `code/server.py` (HTTPS handler: concurrency cap → IP rate limit → read+cap body → HMAC auth →
+  key rate limit → strict validation → read-only pipeline), `gen_secrets.py`, `client_example.py`.
+- Security measures (beyond rate-limit + auth): TLS≥1.2, **per-request nonce** (replay/tamper +
+  no false-dup rejections), ±300s timestamp window, no-content logging (no drug names),
+  read-only DB (`mode=ro`), 16KB/50-item caps, constant-time compare, generic errors, hidden
+  banner, security headers, bounded concurrency.
+- **Verified live**: valid signed → 200; no-auth/bad-sig/expired/replay → 401; unknown → 404;
+  oversized → 400; flood → burst then 429 (per key+IP). Found & fixed a false-replay edge
+  (identical payload same second) by adding the nonce.
+- Secrets (`secrets/`, keys 0600) and `*.pem` are gitignored — only code committed.

@@ -49,7 +49,28 @@ code/
   demo.py             end-to-end demo on seed data
   query.py            query the real DB with brand names
   test_matching.py    regression tests for name matching (precision + safety)
+  b2g/security.py     HMAC auth (replay-resistant) + token-bucket rate limiting
+  server.py           secure HTTPS API over the pipeline
+  gen_secrets.py      mint a dev API key + self-signed TLS cert
+  client_example.py   reference signed client (blueprint for the Flutter client)
 ```
+
+## Secure API server
+```bash
+python3 code/gen_secrets.py          # one-time: dev API key + self-signed cert (secrets/, gitignored)
+python3 code/server.py               # HTTPS on 127.0.0.1:8443
+python3 code/client_example.py "Telma 40" "Pan 40 Tablet"   # signed request
+```
+`POST /v1/analyze` body `{items:[{name,qty}], location?:{lat,lon}}` → matches + savings +
+H/H1/X safety + nearby pharmacies. `GET /v1/health` → liveness. **The receipt image is never
+sent — only text** (OCR is on-device).
+
+Security (see [../writeup/API_DESIGN.md](../writeup/API_DESIGN.md)): TLS; **API key + HMAC
+signing with a per-request nonce** (replay/tamper resistant, constant-time check, ±300 s
+window); **rate limiting per key AND per IP** (+ global concurrency cap); strict input caps
+(16 KB / 50 items); **no-content logging** (no drug names logged); read-only DB; generic
+errors and no server banner. NOTE: stdlib `http.server` should still sit behind nginx/Caddy in
+production.
 
 ## Name matching (exact → prefix → fuzzy)
 Receipt names are messy (`Glycomet 500 Tablet`, `Pan 40 Tab`, `Telma40`). Matching tries

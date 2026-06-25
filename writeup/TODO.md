@@ -24,7 +24,8 @@
 - [ ] Validate the curated H/H1/X salt lists against the official gazette
 - [x] Fuzzy brand-name matching (stdlib `difflib`) for messy/OCR text — precision-first with a discriminator guard (no wrong-drug/strength matches); flags `≈ approx`; regression suite `code/test_matching.py` (PASS). Remaining: OCR brand-typo cases (e.g. "Crocln") are a deliberate safe-miss
 - [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)
-- [ ] (optional) stdlib `http.server` API layer so a client can call the pipeline
+- [x] **Secure stdlib HTTPS API** (`code/server.py`): TLS + API-key+HMAC(nonce) auth + per-key/IP rate limiting + input caps + no-content logging + read-only DB. Verified: valid/replay/expired/oversized/flood all behave. Helpers: `gen_secrets.py`, `client_example.py`, `b2g/security.py`; design in `writeup/API_DESIGN.md`
+- [ ] Production API hardening: reverse proxy (TLS/WAF/IP allowlist), key rotation/revocation, abuse bans
 
 ## Phase 2 — Core pipeline
 - [ ] Brand→generic mapping engine + savings calculation

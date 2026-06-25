@@ -16,6 +16,9 @@ env/
 .env
 *.key
 secrets.*
+secrets/
+*.pem
+*.crt
 
 # Output may hold large/generated artifacts — keep dir, ignore bulky contents by default
 output/*
