@@ -6,11 +6,14 @@
 CREATE TABLE IF NOT EXISTS drugs (
     id         INTEGER PRIMARY KEY,
     name       TEXT    NOT NULL,          -- product/brand name as printed, e.g. "Crocin 500"
+    name_norm  TEXT,                      -- normalized name for fast/tolerant lookup (lowercased, depunctuated)
     salt       TEXT    NOT NULL,          -- normalized active composition, e.g. "paracetamol"
     strength   TEXT    NOT NULL,          -- e.g. "500mg" (kept as text; strengths vary in form)
     form       TEXT,                      -- tablet / syrup / capsule ...
     mrp_inr    REAL,                      -- price in INR for the given pack
     pack       TEXT,                      -- pack description, e.g. "15 tablets"
+    units      INTEGER,                   -- comparable units in the pack (tablets/ml) for per-unit pricing
+    unit_price REAL,                      -- mrp_inr / units (lets us compare unlike pack sizes fairly)
     is_generic INTEGER NOT NULL DEFAULT 0,-- 1 = generic / Jan Aushadhi, 0 = brand
     schedule   TEXT    NOT NULL DEFAULT '',-- '' | 'H' | 'H1' | 'X' (Drugs & Cosmetics schedules)
     source     TEXT                       -- provenance: 'janaushadhi' | 'nppa' | 'az-dataset' | 'seed'
@@ -19,6 +22,7 @@ CREATE TABLE IF NOT EXISTS drugs (
 -- Lookups: by composition (for substitution) and by name (for receipt matching).
 CREATE INDEX IF NOT EXISTS idx_drugs_salt_strength ON drugs(salt, strength);
 CREATE INDEX IF NOT EXISTS idx_drugs_name          ON drugs(name);
+CREATE INDEX IF NOT EXISTS idx_drugs_name_norm     ON drugs(name_norm);
 
 -- Nearby pharmacies — locations only for the MVP (no live inventory yet).
 CREATE TABLE IF NOT EXISTS pharmacies (

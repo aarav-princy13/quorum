@@ -25,6 +25,24 @@ Plus a separate **Schedule H/H1/X** lookup for the safety warning.
 3. **Before commercial launch:** replace/verify any non-commercially-licensed data (esp. 1mg); consider licensing a curated drug DB for the salt-mapping (production reliability + liability).
 4. **Pharmacy locations:** start with a maps API + the Jan Aushadhi Kendra directory; live inventory waits for partnerships (Phase 3).
 
+## Status — what's ingested (2026-06-24)
+- **Ingested** the open Indian Medicine Dataset (`junioralive/Indian-Medicine-Dataset`,
+  ~254k rows) into `data/b2g.db` via `code/ingest.py` (stdlib only). Result:
+  **246,068 products, 10,946 distinct compositions**. This is the brand→composition→price layer.
+- **Schedule H/H1/X** derived from a curated salt list (`b2g/schedule.py`) since the dataset
+  has no schedule column — H1/X (overdose/abuse risk) flagged reliably; H partial.
+- **Savings** computed within the dataset by same-composition + same-form, per-unit price.
+- **NOT yet ingested:** Jan Aushadhi/PMBJP official generic prices, NPPA ceiling prices.
+  These remain the authoritative-price layer to add (PDF/portal parsing).
+
+## Known data-quality issues (open dataset)
+- **Price outliers / data-entry errors** (e.g. per-tablet price entered as per-strip) →
+  mitigated with a median-based outlier floor in `matcher.py`, but real cleaning needs
+  authoritative NPPA/Jan Aushadhi prices.
+- **Salt spelling variants** (Amoxycillin vs Amoxicillin) aren't unified → can split a
+  composition group. Needs a salt-name normalizer / synonym map.
+- **License unspecified upstream** → prototype use only; verify before commercial.
+
 ## Risks
 - **Salt-mapping accuracy & licensing** is the make-or-break data risk (wrong substitution = safety issue).
 - Government data is **PDF/portal-locked** (no APIs) → parsing/maintenance burden; prices drift (NPPA revises ~yearly).

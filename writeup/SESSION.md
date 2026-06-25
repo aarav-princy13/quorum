@@ -74,3 +74,24 @@ Ask the owner the blocking questions (see below), then scope Phase 1.
 - Harden brand-name matching (fuzzy) for real OCR text.
 - Plan the OCR benchmark (collect real receipts).
 - Later: stdlib `http.server` API layer, then the Flutter app.
+
+## 2026-06-24 — Session 1 (cont. 2): Real data ingested
+
+Owner chose **"ingest real drug data"**.
+- Probed network (curl works). Found & downloaded the open **Indian Medicine Dataset**
+  (`junioralive/Indian-Medicine-Dataset`, ~254k rows: name, price, manufacturer, pack, composition).
+- Wrote `code/ingest.py` (stdlib): parse composition → salt+strength, classify schedule from
+  salt, normalize pack→units & unit_price, skip discontinued. Built `data/b2g.db`:
+  **246,068 products, 10,946 compositions, 139,316 schedule-flagged.**
+- Added `code/query.py` (query real DB), `b2g/util.py`, `b2g/report.py` (shared renderer).
+- **Caught & fixed 2 correctness bugs** that would mislead users:
+  1. tablet was being substituted by an **injection** → now matches **same form** only.
+  2. **pack-size mismatch** inflated savings (per-strip vs per-tablet) → now **per-unit pricing**.
+  - Plus an **outlier floor** (drop prices < 20% of composition median = data-entry errors).
+- Verified: sample real receipt → plausible generics, ~₹430 savings, correct H/H1/X flags
+  (paracetamol/cetirizine OTC; alprazolam/tramadol H1; methylphenidate X). Artifacts in `output/`.
+- `data/` (raw CSV + 60 MB DB) is gitignored; only code is committed.
+
+### Open data caveats (documented in DATA_SOURCES.md)
+- Open dataset has price outliers, salt-spelling variants, unspecified license → prototype only.
+- Authoritative Jan Aushadhi/NPPA prices still to be added.

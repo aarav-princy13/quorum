@@ -20,3 +20,6 @@ secrets.*
 # Output may hold large/generated artifacts — keep dir, ignore bulky contents by default
 output/*
 !output/.gitkeep
+
+# Downloaded source data + built DB (large, regenerable)
+data/

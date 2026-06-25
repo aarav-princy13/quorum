@@ -26,8 +26,9 @@ def process_receipt(conn, line_items):
         schedule_code = alt["matched"]["schedule"] if alt["matched"] else ""
         safety = classify_schedule(schedule_code)
 
-        per_unit_savings = alt.get("savings_inr", 0.0)
-        line_savings = round(per_unit_savings * qty, 2)
+        # savings_pack = saving to buy one matched-pack-equivalent at the cheaper unit price.
+        savings_pack = alt.get("savings_pack", 0.0)
+        line_savings = round(savings_pack * qty, 2)
         total_savings += line_savings
         if safety["requires_rx_confirmation"]:
             flagged += 1
@@ -39,7 +40,9 @@ def process_receipt(conn, line_items):
             "matched": alt["matched"],
             "cheapest_alternative": alt["cheapest"],
             "alternatives": alt["alternatives"],
-            "savings_inr_per_unit": per_unit_savings,
+            "n_alternatives": alt.get("n_alternatives", 0),
+            "savings_inr_per_unit": alt.get("savings_per_unit", 0.0),
+            "savings_inr_pack": savings_pack,
             "savings_inr_line": line_savings,
             "savings_pct": alt.get("savings_pct", 0.0),
             "safety": safety,

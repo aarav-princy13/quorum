@@ -1,29 +1,44 @@
 # code/ — Python backend
 
-Pure standard library (`sqlite3`, `csv`, `json`, `re`). **No pandas, no third-party deps.**
+Pure standard library (`sqlite3`, `csv`, `json`, `re`, `statistics`). **No pandas, no third-party deps.**
 
-## Run the demo
+## Quick start
 ```bash
+# 1) Zero-setup demo on tiny illustrative seed data:
 python3 code/demo.py
+
+# 2) Real catalog (~246k Indian medicines). Download once, then build + query:
+mkdir -p data/raw && curl -L -o data/raw/indian_medicine_data.csv \
+  https://raw.githubusercontent.com/junioralive/Indian-Medicine-Dataset/main/DATA/indian_medicine_data.csv
+python3 code/ingest.py                                   # builds data/b2g.db (~60 MB, a few sec)
+python3 code/query.py                                    # sample receipt
+python3 code/query.py "Augmentin 625 Duo Tablet" "Pan 40 Tablet"
 ```
-It builds an in-memory SQLite DB from the seed data, runs a simulated OCR'd receipt
-through the pipeline, prints a report, and writes `output/demo_result.json` +
-`output/demo_report.txt`.
+Outputs are written to `output/` (`*_result.json`, `*_report.txt`).
 
 ## Layout
 ```
 code/
   schema.sql          SQLite schema (drugs, pharmacies)
   seed_data/          tiny sample CSVs (illustrative — NOT real prices)
-    drugs.csv
-    pharmacies.csv
   b2g/                the backend package
-    db.py             connect / build schema / load seed CSVs
-    schedule.py       Schedule H/H1/X classification + Rx-confirmation rule
-    matcher.py        brand name -> salt+strength -> cheaper equivalents + savings
+    db.py             connect / build schema / load + normalize seed
+    util.py           pack-size -> unit-count parsing
+    schedule.py       Schedule H/H1/X classification (salt-based) + Rx rule
+    matcher.py        brand -> salt+strength -> cheaper SAME-FORM equivalents (per-unit)
     pipeline.py       receipt line items -> per-item results + summary; nearby lookup
-  demo.py             end-to-end runnable demo
+    report.py         text rendering of a result
+  ingest.py           build data/b2g.db from the real dataset CSV
+  demo.py             end-to-end demo on seed data
+  query.py            query the real DB with brand names
 ```
+
+## How the matching stays honest
+- **Same composition AND same form** — a tablet is never substituted by an injection.
+- **Per-unit pricing** — pack MRP is divided by unit count, so "strip of 10" isn't
+  compared naively against a single tablet.
+- **Outlier floor** — same-composition prices below 20% of the median are dropped as
+  likely data-entry errors (see `matcher.OUTLIER_FLOOR_FRAC`).
 
 ## How it fits the architecture
 This backend receives **text only** (line items), never the receipt image — the image

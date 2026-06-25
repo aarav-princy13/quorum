@@ -13,8 +13,12 @@
 - [x] Build Schedule H/H1/X classification lookup (`b2g/schedule.py`, warn + confirm Rx)
 - [x] Core pipeline: receipt line items → generic match + savings + safety (validated on sample)
 - [x] Decide drug-data approach → `DATA_SOURCES.md`
-- [ ] Assemble **real** brand→generic salt/strength + MRP into SQLite (Jan Aushadhi + NPPA + open composition dataset)
-- [ ] Harden brand-name matching (fuzzy) for messy OCR text
+- [x] Ingest **real** open dataset (~246k products, 10,946 compositions) into SQLite (`ingest.py`)
+- [x] Salt-based Schedule H/H1/X classifier; same-form + per-unit + outlier-floor matching
+- [ ] Add **authoritative prices**: parse Jan Aushadhi/PMBJP + NPPA into the catalog
+- [ ] Salt-name normalizer / synonym map (unify Amoxycillin/Amoxicillin etc.)
+- [ ] Validate the curated H/H1/X salt lists against the official gazette
+- [ ] Harden brand-name matching (fuzzy) for messy OCR text (e.g. "Glycomet 500 Tablet" missed)
 - [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)
 - [ ] (optional) stdlib `http.server` API layer so a client can call the pipeline
 

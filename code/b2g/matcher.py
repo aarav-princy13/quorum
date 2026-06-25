@@ -5,6 +5,12 @@ output is fuzzy; robust fuzzy matching is a later task (see writeup/TODO.md).
 """
 
 import re
+import statistics
+
+# Ignore same-composition products priced below this fraction of the median
+# per-unit price — almost always data-entry errors in the open dataset
+# (e.g. per-tablet price entered as a per-strip price). Tunable.
+OUTLIER_FLOOR_FRAC = 0.2
 
 
 def normalize(text):
@@ -15,56 +21,96 @@ def normalize(text):
 
 
 def _lookup_drug(conn, name):
-    """Find the catalog row for a scanned name. Returns a sqlite3.Row or None."""
+    """Find the catalog row for a scanned name via the indexed name_norm column.
+
+    Tries, in order: (1) exact normalized match, (2) a catalog name that is a
+    prefix of the query ("crocin 500 tablet" -> "crocin 500"), (3) the query as a
+    prefix of a catalog name. Returns a sqlite3.Row or None.
+    """
     norm = normalize(name)
 
-    # 1) exact normalized match
-    for row in conn.execute("SELECT * FROM drugs"):
-        if normalize(row["name"]) == norm:
-            return row
+    # 1) exact normalized match (uses idx_drugs_name_norm); cheapest if duplicates
+    row = conn.execute(
+        "SELECT * FROM drugs WHERE name_norm = ? ORDER BY mrp_inr LIMIT 1", (norm,)
+    ).fetchone()
+    if row:
+        return row
 
-    # 2) prefix / leading-token match (e.g. "Crocin 500 Tab" -> "Crocin 500")
-    candidates = []
-    for row in conn.execute("SELECT * FROM drugs"):
-        rnorm = normalize(row["name"])
-        if norm.startswith(rnorm) or rnorm.startswith(norm):
-            candidates.append((len(rnorm), row))
-    if candidates:
-        candidates.sort(reverse=True)          # prefer the longest (most specific) match
-        return candidates[0][1]
-    return None
+    # 2) a stored name_norm is a leading prefix of the query -> most specific wins
+    row = conn.execute(
+        "SELECT * FROM drugs WHERE name_norm = substr(?, 1, length(name_norm)) "
+        "AND length(name_norm) >= 3 ORDER BY length(name_norm) DESC, mrp_inr LIMIT 1",
+        (norm,),
+    ).fetchone()
+    if row:
+        return row
+
+    # 3) the query is a prefix of a stored name (index-friendly: no leading wildcard)
+    row = conn.execute(
+        "SELECT * FROM drugs WHERE name_norm LIKE ? ESCAPE '\\' "
+        "ORDER BY length(name_norm) ASC, mrp_inr LIMIT 1",
+        (norm.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + " %",),
+    ).fetchone()
+    return row
+
+
+def _row_unit_price(row):
+    """Per-unit price, falling back to pack MRP when units are unknown."""
+    up = row["unit_price"]
+    return up if up is not None else row["mrp_inr"]
 
 
 def find_alternatives(conn, name):
-    """For a scanned brand name, return its match + cheaper same-composition options.
+    """For a scanned brand name, return its match + cheaper equivalents.
 
-    Returns a dict:
-      matched   : the catalog row we identified (or None)
-      salt/strength
-      alternatives : list of {name, mrp_inr, is_generic, source, pack} cheaper than `matched`,
-                     sorted cheapest-first
-      cheapest  : the single cheapest alternative (or None)
-      savings_inr / savings_pct : vs the matched product's MRP
+    Equivalents must share the SAME composition (salt + strength) AND the SAME
+    dosage form (a tablet is not swapped for an injection), and are compared on
+    PER-UNIT price so unlike pack sizes are judged fairly.
+
+    Returns a dict with: matched, alternatives (cheapest-first), cheapest,
+    savings_per_unit / savings_pct / savings_pack (savings for one matched-pack).
     """
     matched = _lookup_drug(conn, name)
     if matched is None:
         return {"query": name, "matched": None, "alternatives": [], "cheapest": None}
 
-    rows = conn.execute(
-        "SELECT * FROM drugs WHERE salt = ? AND strength = ? AND id != ? "
-        "AND mrp_inr < ? ORDER BY mrp_inr ASC",
-        (matched["salt"], matched["strength"], matched["id"], matched["mrp_inr"]),
-    ).fetchall()
+    m_unit = _row_unit_price(matched)
+
+    # Pull every same-composition, same-form product (to compute a robust price
+    # floor and to count real alternatives), then filter in Python.
+    sql = ("SELECT * FROM drugs WHERE salt = ? AND strength = ? "
+           "AND COALESCE(unit_price, mrp_inr) IS NOT NULL ")
+    params = [matched["salt"], matched["strength"]]
+    if matched["form"]:
+        sql += "AND form = ? "
+        params.append(matched["form"])
+    candidates = conn.execute(sql, params).fetchall()
+
+    # Outlier floor: drop implausibly-cheap data errors below a fraction of the median.
+    prices = [_row_unit_price(r) for r in candidates]
+    floor = 0.0
+    n_outliers = 0
+    if len(prices) >= 5:
+        floor = OUTLIER_FLOOR_FRAC * statistics.median(prices)
+        n_outliers = sum(1 for p in prices if p < floor)
+
+    cheaper = [
+        r for r in candidates
+        if r["id"] != matched["id"] and _row_unit_price(r) < m_unit and _row_unit_price(r) >= floor
+    ]
+    cheaper.sort(key=_row_unit_price)
 
     alternatives = [
         {
             "name": r["name"],
             "mrp_inr": r["mrp_inr"],
+            "unit_price": _row_unit_price(r),
+            "units": r["units"],
             "is_generic": bool(r["is_generic"]),
             "source": r["source"],
             "pack": r["pack"],
         }
-        for r in rows
+        for r in cheaper[:25]
     ]
     cheapest = alternatives[0] if alternatives else None
 
@@ -74,18 +120,26 @@ def find_alternatives(conn, name):
             "name": matched["name"],
             "salt": matched["salt"],
             "strength": matched["strength"],
+            "form": matched["form"],
             "mrp_inr": matched["mrp_inr"],
+            "unit_price": m_unit,
+            "units": matched["units"],
             "schedule": matched["schedule"],
             "pack": matched["pack"],
         },
         "alternatives": alternatives,
         "cheapest": cheapest,
+        "n_alternatives": len(cheaper),
+        "n_outliers_excluded": n_outliers,
     }
-    if cheapest:
-        saved = matched["mrp_inr"] - cheapest["mrp_inr"]
-        result["savings_inr"] = round(saved, 2)
-        result["savings_pct"] = round(100 * saved / matched["mrp_inr"], 1) if matched["mrp_inr"] else 0.0
+    if cheapest and m_unit:
+        per_unit = m_unit - cheapest["unit_price"]
+        pack_units = matched["units"] or 1
+        result["savings_per_unit"] = round(per_unit, 2)
+        result["savings_pct"] = round(100 * per_unit / m_unit, 1)
+        result["savings_pack"] = round(per_unit * pack_units, 2)   # buy one matched-pack worth, cheaper
     else:
-        result["savings_inr"] = 0.0
+        result["savings_per_unit"] = 0.0
         result["savings_pct"] = 0.0
+        result["savings_pack"] = 0.0
     return result
