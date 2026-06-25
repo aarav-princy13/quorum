@@ -184,3 +184,19 @@ Decisions (asked): **API key + HMAC signing**, **HTTPS in the server now**, **ra
   oversized → 400; flood → burst then 429 (per key+IP). Found & fixed a false-replay edge
   (identical payload same second) by adding the nonce.
 - Secrets (`secrets/`, keys 0600) and `*.pem` are gitignored — only code committed.
+
+## 2026-06-25 — Session 1 (cont. 8): First real-receipt benchmark
+
+Owner shared 4 real receipts (pharm_1..4, mixed webp/jpg/png) to try.
+- Read each via vision (= VLM-OCR path); several were low-res → crop+upscale with ImageMagick.
+  Extracted line items → fixtures `code/ocr_samples/*.json`. Built `code/ocr_bench.py`.
+- Diverse set: brand injectables (Remdac/Mepem/Doxozest), generic descriptors (Paracetamol 500/
+  Cough Syrup/Antibiotic Cream), homeopathy (Belladonna 30), non-drug (saline, plastic), topicals.
+- Result: 12 items, 2 matched, 10 not found — but ~5 are CORRECT safe non-matches (homeopathy,
+  saline, generic descriptors, packaging). The precision-first design held (no wrong matches on
+  unmatchable items).
+- **Found real, fixable gaps** (writeup/BENCHMARK.md): (1) unit-blind discriminator `1gm`≠`1000mg`
+  missed meropenem-H1 [in catalog]; (2) pack-size tokens `5GM`/`75GM` wrongly required → missed
+  Mupikem/Clocip [in catalog]; (3) schedule list misses injectables → remdesivir shown OTC
+  (safety); (4) plain `Paracetamol 500` matched a caffeine combo (precision); (5) Doxozest absent
+  (coverage). Receipt images gitignored (pharm_*); fixtures committed.

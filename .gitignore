@@ -26,3 +26,7 @@ output/*
 
 # Downloaded source data + built DB (large, regenerable)
 data/
+
+# Receipt test images at repo root (internet-sourced, not ours to redistribute).
+# Root-anchored so it does NOT ignore code/ocr_samples/pharm_*.json fixtures.
+/pharm_*

@@ -23,7 +23,11 @@
 - [ ] Fuller pharmacy coverage: OSM is sparse in India (~15 in tricity) → add Google Places and/or Jan Aushadhi Kendra directory for production
 - [ ] Validate the curated H/H1/X salt lists against the official gazette
 - [x] Fuzzy brand-name matching (stdlib `difflib`) for messy/OCR text — precision-first with a discriminator guard (no wrong-drug/strength matches); flags `≈ approx`; regression suite `code/test_matching.py` (PASS). Remaining: OCR brand-typo cases (e.g. "Crocln") are a deliberate safe-miss
-- [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)
+- [x] First **real-receipt benchmark** (4 receipts, VLM-OCR via vision → pipeline; `code/ocr_bench.py`, `code/ocr_samples/`, writeup/BENCHMARK.md). Surfaced concrete gaps below. (On-device OCR *engine* comparison still needs the mobile harness.)
+- [ ] **Fix matcher bug: unit-blind discriminator** — `1gm` vs `1000mg` rejected a real meropenem (H1) match. Make numeric matching unit-aware (gm→×1000, mcg→÷1000)
+- [ ] **Fix matcher bug: pack-size tokens** — `5GM`/`75GM`/`100ML` (pack sizes) wrongly required as discriminators → missed Mupikem/Clocip (both in catalog)
+- [ ] **Safety: expand schedule list** — injectables/antivirals/oncology (remdesivir, meropenem, doxorubicin) show as OTC; default these to prescription-only
+- [ ] **Precision: plain-vs-combo** — `Paracetamol 500 mg` matched a caffeine combo; prefer simplest same-strength composition for generic-name queries
 - [x] **Secure stdlib HTTPS API** (`code/server.py`): TLS + API-key+HMAC(nonce) auth + per-key/IP rate limiting + input caps + no-content logging + read-only DB. Verified: valid/replay/expired/oversized/flood all behave. Helpers: `gen_secrets.py`, `client_example.py`, `b2g/security.py`; design in `writeup/API_DESIGN.md`
 - [ ] Production API hardening: reverse proxy (TLS/WAF/IP allowlist), key rotation/revocation, abuse bans
 

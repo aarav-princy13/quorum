@@ -1,0 +1,12 @@
+{
+  "receipt": "pharm_1",
+  "vendor": "Blue Bliss Hospital",
+  "format": "webp",
+  "note": "ICU/COVID hospital bill — brand injectables",
+  "items": [
+    {"name": "REMDAC 100MG INJ", "qty": 1, "printed_mrp": 899.00},
+    {"name": "MEPEM 1GM INJ", "qty": 3, "printed_mrp": 1150.00},
+    {"name": "NS 100ML", "qty": 2, "printed_mrp": 37.72},
+    {"name": "INFLORIN 5K INJ", "qty": 2, "printed_mrp": 144.00}
+  ]
+}

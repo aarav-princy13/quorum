@@ -1,0 +1,11 @@
+{
+  "receipt": "pharm_2",
+  "vendor": "MediCare Wholesale Pharmacy",
+  "format": "jpg",
+  "note": "wholesale tax invoice — generic descriptors, not brand names",
+  "items": [
+    {"name": "Paracetamol 500 mg", "qty": 10, "printed_mrp": 50.00},
+    {"name": "Cough Syrup (200ml)", "qty": 20, "printed_mrp": 90.00},
+    {"name": "Antibiotic Cream (30g)", "qty": 10, "printed_mrp": 55.00}
+  ]
+}

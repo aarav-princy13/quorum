@@ -49,6 +49,8 @@ code/
   demo.py             end-to-end demo on seed data
   query.py            query the real DB with brand names
   test_matching.py    regression tests for name matching (precision + safety)
+  ocr_samples/        line items extracted from real receipts (VLM-OCR fixtures)
+  ocr_bench.py        run the pipeline over the receipt fixtures (see writeup/BENCHMARK.md)
   b2g/security.py     HMAC auth (replay-resistant) + token-bucket rate limiting
   server.py           secure HTTPS API over the pipeline
   gen_secrets.py      mint a dev API key + self-signed TLS cert

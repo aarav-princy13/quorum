@@ -1,0 +1,10 @@
+{
+  "receipt": "pharm_3",
+  "vendor": "Jepline Pharmacy (sample/template)",
+  "format": "png",
+  "note": "homeopathy + non-drug line items — should SAFELY not match (we cover allopathy)",
+  "items": [
+    {"name": "Belladonna 30", "qty": 4, "printed_mrp": null},
+    {"name": "1/2 dram plastic", "qty": 1, "printed_mrp": null}
+  ]
+}

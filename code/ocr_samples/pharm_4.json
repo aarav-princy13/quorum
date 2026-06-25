@@ -1,0 +1,11 @@
+{
+  "receipt": "pharm_4",
+  "vendor": "hospital pharmacy (Haldwani)",
+  "format": "webp",
+  "note": "two stacked receipts — topicals + oncology injectable",
+  "items": [
+    {"name": "MUPIKEM OINT 5GM", "qty": 1, "printed_mrp": null},
+    {"name": "CLOCIP DUST POW 75GM", "qty": 1, "printed_mrp": null},
+    {"name": "DOXOZEST INJ 50MG", "qty": 3, "printed_mrp": null}
+  ]
+}
