@@ -27,24 +27,53 @@ def normalize(text):
     return re.sub(r"\s+", " ", text).strip()
 
 
-_NUM_RE = re.compile(r"\d+(?:\.\d+)?")
 FUZZY_THRESHOLD = 0.55          # minimum blended score to accept a fuzzy match
 
+# mass units -> mg factor; ml/iu kept as (value, unit). Lets 1gm == 1000mg == bare 1000.
+_MASS_UNITS = {"mg": 1.0, "mcg": 0.001, "g": 1000.0, "gm": 1000.0}
+_KEEP_UNITS = {"ml", "iu"}
 
-def _name_numbers(text):
-    """Numeric tokens in a name (the printed strength, e.g. {500.0}). Used as a guard."""
-    return {float(x) for x in _NUM_RE.findall(text or "")}
+
+# units + dosage-form words: not part of the brand identity, excluded from brand scoring
+_STOP = frozenset({
+    "mg", "mcg", "g", "gm", "ml", "iu",
+    "tablet", "tablets", "tab", "tabs", "capsule", "capsules", "cap", "caps",
+    "injection", "injections", "inj", "syrup", "cream", "ointment", "oint", "drops",
+    "powder", "pow", "gel", "solution", "suspension", "infusion", "spray", "lotion",
+    "sr", "er", "xr", "cr", "pr", "od", "dt", "duo", "forte", "plus", "dust",
+})
 
 
-def _discriminators(tokens):
-    """Tokens that distinguish DIFFERENT drugs and must be preserved in any match:
-    anything with a digit (500, 40, d3, b12) and single letters (vitamin c vs a).
-    Generic words (tablet, sr, duo) are intentionally excluded."""
-    out = set()
-    for t in tokens:
-        if any(c.isdigit() for c in t) or (len(t) == 1 and t.isalpha()):
-            out.add(t)
-    return out
+def _is_number(t):
+    return bool(t) and t.replace(".", "", 1).isdigit()
+
+
+def _brand_tokens(tokens):
+    """Tokens that identify the brand/molecule — excludes numbers, units, form words."""
+    return {t for t in tokens if not _is_number(t) and t not in _STOP}
+
+
+def _strength_sigs(tokens):
+    """Unit-aware strength signatures from ordered name tokens -> (mass_mg_set, other_set).
+
+    A number followed by a mass unit (mg/mcg/g/gm) becomes its mg-equivalent; a bare
+    number is treated as mg too (tablet strengths); ml/iu keep (value, unit). This makes
+    "1 gm" == "1000 mg" == bare "1000" so unit shorthand on receipts matches the catalog.
+    """
+    mass, other = set(), set()
+    n, i = len(tokens), 0
+    while i < n:
+        t = tokens[i]
+        if _is_number(t):
+            val = float(t)
+            nxt = tokens[i + 1] if i + 1 < n else ""
+            if nxt in _MASS_UNITS:
+                mass.add(round(val * _MASS_UNITS[nxt], 4)); i += 2; continue
+            if nxt in _KEEP_UNITS:
+                other.add((round(val, 4), nxt)); i += 2; continue
+            mass.add(round(val, 4))
+        i += 1
+    return mass, other
 
 
 def _esc_like(s):
@@ -73,18 +102,30 @@ def _fuzzy_lookup(conn, norm):
         return None, 0.0
 
     qtok = set(qtokens)
-    qdisc = _discriminators(qtokens)
+    q_letters = {t for t in qtokens if len(t) == 1 and t.isalpha()}
+    q_mass, q_other = _strength_sigs(qtokens)
+    q_brand = _brand_tokens(qtokens)
     best, best_score = None, 0.0
     for r in cands:
         cn = r["name_norm"] or ""
-        ctok = set(cn.split())
-        # SAFETY: every distinguishing token (strength, vitamin letter, ...) must be
-        # present in the candidate — blocks "Vitamin C"->"Vitamin A", "500"->"1gm", etc.
-        if not qdisc.issubset(ctok):
+        ctoks = cn.split()
+        ctok = set(ctoks)
+        # SAFETY: distinguishing tokens must be preserved. Single letters exactly
+        # (Vitamin C vs A); numeric strengths are matched UNIT-AWARE (1gm == 1000mg) so
+        # we never substitute a different dose — but unit shorthand still lines up.
+        if not q_letters.issubset(ctok):
             continue
+        c_mass, c_other = _strength_sigs(ctoks)
+        if not q_mass.issubset(c_mass) or not q_other.issubset(c_other):
+            continue
+        # Base on string + token similarity (handles brand≠catalog-name, e.g. Remdac→
+        # Remdiz/remdesivir); ADD a brand-token bonus on top so exact-brand matches with
+        # format noise (Mepem "1gm inj" vs "1000mg injection") still clear the threshold.
+        cbrand = _brand_tokens(ctoks)
+        bjacc = len(q_brand & cbrand) / len(q_brand | cbrand) if (q_brand | cbrand) else 0.0
         ratio = difflib.SequenceMatcher(None, norm, cn).ratio()
         jacc = len(qtok & ctok) / len(qtok | ctok) if (qtok | ctok) else 0.0
-        score = 0.6 * ratio + 0.4 * jacc
+        score = 0.6 * ratio + 0.4 * jacc + 0.3 * bjacc
         if score > best_score:
             best, best_score = r, score
     return (best, best_score) if best_score >= FUZZY_THRESHOLD else (None, best_score)

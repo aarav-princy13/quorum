@@ -28,7 +28,7 @@ RAW_CSV = ROOT / "data" / "raw" / "indian_medicine_data.csv"
 DB_PATH = ROOT / "data" / "b2g.db"
 
 from b2g.matcher import normalize                        # noqa: E402
-from b2g.schedule import schedule_for_salts               # noqa: E402
+from b2g.schedule import schedule_for                     # noqa: E402
 from b2g.util import parse_pack_units                     # noqa: E402
 from b2g.normalize import canonical_salt, canonical_strength  # noqa: E402
 
@@ -134,11 +134,12 @@ def main():
             mrp = to_float(row.get(price_col))
             units = parse_pack_units(pack)
             unit_price = round(mrp / units, 4) if (mrp and units) else mrp
-            sched = schedule_for_salts(salt)
+            form = detect_form(name, pack)
+            sched = schedule_for(salt, form)
             is_generic = 1 if normalize(name).startswith(salt.split("+")[0][:6]) else 0
             batch.append((
                 name, normalize(name), salt, strength, 1 if known else 0,
-                detect_form(name, pack), mrp, pack, units, unit_price,
+                form, mrp, pack, units, unit_price,
                 is_generic, sched, "indian-medicine-dataset",
             ))
             if len(batch) >= 5000:

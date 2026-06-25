@@ -200,3 +200,19 @@ Owner shared 4 real receipts (pharm_1..4, mixed webp/jpg/png) to try.
   Mupikem/Clocip [in catalog]; (3) schedule list misses injectables → remdesivir shown OTC
   (safety); (4) plain `Paracetamol 500` matched a caffeine combo (precision); (5) Doxozest absent
   (coverage). Receipt images gitignored (pharm_*); fixtures committed.
+
+## 2026-06-25 — Session 1 (cont. 9): Fix the safety pair (#1 + #3)
+
+Owner: fix the safety pair.
+- **#1 unit-blind discriminator** → made strength matching **unit-aware** (`_strength_sigs`:
+  number+unit → mg-equiv, 1gm=1000mg=bare-1000; ml/iu kept separate). Replaced the raw-token
+  discriminator guard. Then MEPEM passed the guard but failed the score threshold (only "mepem"
+  overlapped) → measured the components and added a **brand-token bonus** (`score = 0.6·ratio +
+  0.4·jacc + 0.3·brand_jacc`). `MEPEM 1GM INJ` → meropenem 1000mg **H1**. REMDAC (brand≠catalog
+  "Remdiz") still matches via ratio — verified both with measured scores, not guesses.
+- **#3 schedule misses injectables** → expanded curated salts (remdesivir/favipiravir/cytotoxics/
+  injectable antibiotics/anticoagulants) and added **`schedule_for(salt, form)`** with a parenteral
+  fallback (unknown injection/infusion → H). Wired into both ingesters (re-ingest). REMDAC→
+  remdesivir now **H**; oral OTC (paracetamol tablet, cetirizine, vitamin C) stays OTC — verified.
+- Result: benchmark matched 2→3, Rx-flagged 0→2, savings up (meropenem 82% off); `test_matching.py`
+  PASS (0 wrong). Remaining benchmark gaps: #2 pack-size, #4 plain-vs-combo.

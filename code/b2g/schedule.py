@@ -97,7 +97,23 @@ _SALTS_H = frozenset({
     "escitalopram", "fluoxetine", "amitriptyline", "olanzapine", "risperidone",
     "levetiracetam", "valproate", "carbamazepine", "salbutamol", "budesonide",
     "tamsulosin", "finasteride", "sildenafil", "tadalafil",
+    # antivirals (prescription-only; several are restricted hospital drugs)
+    "remdesivir", "favipiravir", "molnupiravir", "oseltamivir", "valacyclovir",
+    "ganciclovir", "ritonavir", "lopinavir", "tenofovir", "dolutegravir",
+    # injectable antibiotics / anti-infectives (Schedule H)
+    "piperacillin", "tazobactam", "vancomycin", "teicoplanin", "colistin",
+    "linezolid", "amikacin", "gentamicin", "ceftriaxone", "metronidazole",
+    # cytotoxic / oncology (prescription-only, cytotoxic)
+    "doxorubicin", "cisplatin", "carboplatin", "oxaliplatin", "paclitaxel",
+    "docetaxel", "cyclophosphamide", "methotrexate", "gemcitabine", "fluorouracil",
+    "vincristine", "vinblastine", "imatinib", "rituximab", "trastuzumab",
+    # anticoagulants / other parenterals commonly billed
+    "enoxaparin", "heparin", "dalteparin", "filgrastim",
 })
+
+# Dosage forms that are essentially never sold over the counter — used as a
+# safety fallback so an unrecognised injectable is still flagged prescription-only.
+_RX_FORMS = frozenset({"injection", "infusion"})
 
 
 def schedule_for_salts(salt_text):
@@ -120,3 +136,18 @@ def schedule_for_salts(salt_text):
         if rank[code] > rank[best]:
             best = code
     return best
+
+
+def schedule_for(salt_text, form=""):
+    """Schedule from salt, with a parenteral-form fallback.
+
+    If the salt isn't in our curated lists but the dosage form is an injection/
+    infusion, default to 'H' (prescription-only) — injectables are not sold OTC, so
+    erring toward a warning is the safe choice for the 'can they buy it' feature.
+    """
+    code = schedule_for_salts(salt_text)
+    if code:
+        return code
+    if (form or "").strip().lower() in _RX_FORMS:
+        return "H"
+    return ""

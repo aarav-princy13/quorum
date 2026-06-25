@@ -29,7 +29,7 @@ SRC = ROOT / "data" / "raw" / "janaushadhi_products.json"
 DB_PATH = ROOT / "data" / "b2g.db"
 
 from b2g.matcher import normalize                          # noqa: E402
-from b2g.schedule import schedule_for_salts                # noqa: E402
+from b2g.schedule import schedule_for                      # noqa: E402
 from b2g.util import parse_pack_units                      # noqa: E402
 from b2g.normalize import canonical_salt, canonical_strength  # noqa: E402
 
@@ -130,7 +130,7 @@ def main():
         unit_price = round(mrp / units, 4) if (mrp and units) else mrp
         rows.append((
             gname, normalize(gname), salt, strength, 1 if known else 0, form, mrp, unit,
-            units, unit_price, 1, 1, schedule_for_salts(salt), "janaushadhi",
+            units, unit_price, 1, 1, schedule_for(salt, form), "janaushadhi",
         ))
 
     conn.executemany(

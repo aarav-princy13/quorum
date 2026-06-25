@@ -47,6 +47,18 @@ to two specific, fixable matching bugs.
 5. **Coverage**: the open dataset misses some brands (Doxozest). Authoritative/curated sources
    would help; an honest "not found" is the safe fallback meanwhile.
 
+## Fixes applied (2026-06-25, safety pair)
+- **#1 unit-blind discriminator → FIXED.** Matching is now unit-aware (`_strength_sigs`:
+  1gm = 1000mg = bare 1000). `MEPEM 1GM INJ` now matches `Mepem 1000mg Injection` →
+  meropenem, correctly flagged **H1**. Also added a brand-token score bonus so exact-brand
+  matches survive format noise (`inj` vs `injection`).
+- **#3 schedule misses injectables → FIXED.** Expanded the curated salt list (antivirals incl.
+  remdesivir, cytotoxics, injectable antibiotics, anticoagulants) and added a **parenteral-form
+  fallback** (`schedule_for(salt, form)`: unrecognised injection/infusion → prescription-only).
+  `REMDAC → remdesivir` now flags **H** (was OTC). Verified: oral OTC drugs stay OTC.
+- Result: benchmark 2→3 matched, Rx-flagged 0→2; `test_matching.py` still PASS (0 wrong).
+- Still open: #2 (pack-size tokens — Mupikem/Clocip), #4 (plain-vs-combo — Paracetamol).
+
 ## What worked
 - Format-agnostic (webp/jpg/png all handled). Fuzzy match resolved `REMDAC` → remdesivir.
 - **Safe-by-default**: homeopathy, saline, generic descriptors, and packaging correctly did
