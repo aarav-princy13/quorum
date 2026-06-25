@@ -216,3 +216,19 @@ Owner: fix the safety pair.
   remdesivir now **H**; oral OTC (paracetamol tablet, cetirizine, vitamin C) stays OTC — verified.
 - Result: benchmark matched 2→3, Rx-flagged 0→2, savings up (meropenem 82% off); `test_matching.py`
   PASS (0 wrong). Remaining benchmark gaps: #2 pack-size, #4 plain-vs-combo.
+
+## 2026-06-25 — Session 1 (cont. 10): Fix benchmark #2 + #4
+
+Owner: do #2 and #4.
+- **#2 pack-size tokens** → form-aware: on topical/powder queries a gram/ml in the name is the
+  tube/bottle PACK SIZE not a dose, so `_strength_sigs(drop_pack=True)` ignores it (injections
+  keep gm/mg as the real dose). `MUPIKEM OINT 5GM` → mupirocin (54% off), `CLOCIP DUST POW 75GM`
+  → clotrimazole (82% off).
+- **#4 plain-vs-combo** → probe showed every catalog product NAMED "Paracetamol 500…" is a combo
+  (no plain one by that name). So added `_salt_lookup`: when the query's brand token IS a salt,
+  match by composition preferring the **plain single-salt** drug (median-priced representative).
+  `Paracetamol 500 mg` → plain paracetamol 500mg (76% savings), not a caffeine combo. Brand
+  queries (Crocin/Telma/Glycomet) are unaffected (their first token isn't a salt).
+- Benchmark **2→5 matched** (the 7 misses are now 4 correct safe non-matches + 2 acceptable +
+  1 coverage gap Doxozest). Added 4 regression cases to `code/test_matching.py` → 17 cases PASS,
+  0 wrong. All four benchmark findings (#1–#4) now resolved; only coverage remains.

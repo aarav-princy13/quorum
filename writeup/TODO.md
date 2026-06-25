@@ -25,9 +25,9 @@
 - [x] Fuzzy brand-name matching (stdlib `difflib`) for messy/OCR text — precision-first with a discriminator guard (no wrong-drug/strength matches); flags `≈ approx`; regression suite `code/test_matching.py` (PASS). Remaining: OCR brand-typo cases (e.g. "Crocln") are a deliberate safe-miss
 - [x] First **real-receipt benchmark** (4 receipts, VLM-OCR via vision → pipeline; `code/ocr_bench.py`, `code/ocr_samples/`, writeup/BENCHMARK.md). Surfaced concrete gaps below. (On-device OCR *engine* comparison still needs the mobile harness.)
 - [x] **Fixed: unit-blind discriminator** — unit-aware strength matching (`_strength_sigs`, 1gm=1000mg) + brand-token score bonus; `MEPEM 1GM` now matches meropenem (H1). Verified.
-- [ ] **Fix matcher bug: pack-size tokens** — `5GM`/`75GM`/`100ML` (pack sizes) wrongly required as discriminators → missed Mupikem/Clocip (both in catalog)
+- [x] **Fixed: pack-size tokens** — topical/powder queries drop gram/ml pack sizes (`_strength_sigs drop_pack`); Mupikem/Clocip now match (54%/82% off). Injections keep gm/mg as dose. Verified.
 - [x] **Fixed: schedule misses injectables** — expanded curated salts (remdesivir/cytotoxics/injectable antibiotics) + parenteral-form fallback (`schedule_for(salt, form)`); REMDAC→remdesivir now flags H. Verified oral OTC unaffected.
-- [ ] **Precision: plain-vs-combo** — `Paracetamol 500 mg` matched a caffeine combo; prefer simplest same-strength composition for generic-name queries
+- [x] **Fixed: plain-vs-combo** — generic salt-name queries match by composition (`_salt_lookup`, plain single-salt, median representative); `Paracetamol 500 mg` → plain paracetamol (76% savings), not a combo. Verified.
 - [x] **Secure stdlib HTTPS API** (`code/server.py`): TLS + API-key+HMAC(nonce) auth + per-key/IP rate limiting + input caps + no-content logging + read-only DB. Verified: valid/replay/expired/oversized/flood all behave. Helpers: `gen_secrets.py`, `client_example.py`, `b2g/security.py`; design in `writeup/API_DESIGN.md`
 - [ ] Production API hardening: reverse proxy (TLS/WAF/IP allowlist), key rotation/revocation, abuse bans
 

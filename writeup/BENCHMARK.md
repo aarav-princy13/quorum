@@ -57,7 +57,19 @@ to two specific, fixable matching bugs.
   fallback** (`schedule_for(salt, form)`: unrecognised injection/infusion → prescription-only).
   `REMDAC → remdesivir` now flags **H** (was OTC). Verified: oral OTC drugs stay OTC.
 - Result: benchmark 2→3 matched, Rx-flagged 0→2; `test_matching.py` still PASS (0 wrong).
-- Still open: #2 (pack-size tokens — Mupikem/Clocip), #4 (plain-vs-combo — Paracetamol).
+
+## Fixes applied (2026-06-25, #2 + #4)
+- **#2 pack-size tokens → FIXED.** On topical/powder queries a gram/ml amount in the name is
+  the tube/bottle PACK SIZE, not a dose — `_strength_sigs(drop_pack=...)` now ignores it (but
+  keeps gm/mg as the dose on injections). `MUPIKEM OINT 5GM` → mupirocin (54% off),
+  `CLOCIP DUST POW 75GM` → clotrimazole (82% off).
+- **#4 plain-vs-combo → FIXED.** A generic name ("Paracetamol 500 mg") whose brand token IS a
+  salt now matches by composition via a salt-lookup that prefers the **plain single-salt** drug
+  (median-priced representative), not a combo that merely starts with the same words.
+  `Paracetamol 500 mg` → plain paracetamol 500mg (76% savings shown), no longer a caffeine combo.
+- Result: benchmark **5/12 matched** (of the 7 misses, 4 are correct safe non-matches —
+  generic descriptors/homeopathy/packaging — 2 acceptable, 1 real coverage gap: Doxozest).
+  Added regression cases for all four to `code/test_matching.py` → PASS (0 wrong).
 
 ## What worked
 - Format-agnostic (webp/jpg/png all handled). Fuzzy match resolved `REMDAC` → remdesivir.

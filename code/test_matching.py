@@ -31,6 +31,10 @@ SHOULD_MATCH = [
     ("Glycomet-SR 500", "metformin", "500mg"),
     ("Telma40", "telmisartan", "40mg"),              # no space brand/number
     ("Glycomet-GP 2 Tablet", "glimepiride+metformin", None),  # combo stays combo
+    ("MEPEM 1GM INJ", "meropenem", "1000mg"),        # 1gm == 1000mg (unit-aware)
+    ("Paracetamol 500 mg", "paracetamol", "500mg"),  # generic name -> plain, NOT a combo
+    ("MUPIKEM OINT 5GM", "mupirocin", None),         # 5GM is pack size, not a strength
+    ("CLOCIP DUST POW 75GM", "clotrimazole", None),  # 75GM pack size on a powder
 ]
 
 # queries that must NEVER resolve to the WRONG drug (None = either miss, or match

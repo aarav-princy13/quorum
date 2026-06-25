@@ -40,7 +40,15 @@ _STOP = frozenset({
     "tablet", "tablets", "tab", "tabs", "capsule", "capsules", "cap", "caps",
     "injection", "injections", "inj", "syrup", "cream", "ointment", "oint", "drops",
     "powder", "pow", "gel", "solution", "suspension", "infusion", "spray", "lotion",
-    "sr", "er", "xr", "cr", "pr", "od", "dt", "duo", "forte", "plus", "dust",
+    "sr", "er", "xr", "cr", "pr", "od", "dt", "duo", "forte", "plus", "dust", "paste",
+})
+
+# Topical/liquid forms where a gram/ml amount in the NAME is the tube/bottle PACK SIZE
+# (e.g. "Mupikem Oint 5gm"), not a dose — so it must not be required as a strength.
+# (For injections gm/mg IS the dose, so those forms are deliberately excluded here.)
+_PACK_SIZE_FORMS = frozenset({
+    "ointment", "oint", "cream", "gel", "lotion", "paste",
+    "powder", "pow", "dust", "soap", "shampoo",
 })
 
 
@@ -53,12 +61,15 @@ def _brand_tokens(tokens):
     return {t for t in tokens if not _is_number(t) and t not in _STOP}
 
 
-def _strength_sigs(tokens):
+def _strength_sigs(tokens, drop_pack=False):
     """Unit-aware strength signatures from ordered name tokens -> (mass_mg_set, other_set).
 
     A number followed by a mass unit (mg/mcg/g/gm) becomes its mg-equivalent; a bare
     number is treated as mg too (tablet strengths); ml/iu keep (value, unit). This makes
     "1 gm" == "1000 mg" == bare "1000" so unit shorthand on receipts matches the catalog.
+
+    drop_pack=True (set for topical/powder queries) ignores gram/ml amounts — on those
+    forms the number is a tube/bottle PACK SIZE, not a dose, so it must not be required.
     """
     mass, other = set(), set()
     n, i = len(tokens), 0
@@ -68,8 +79,12 @@ def _strength_sigs(tokens):
             val = float(t)
             nxt = tokens[i + 1] if i + 1 < n else ""
             if nxt in _MASS_UNITS:
+                if drop_pack and nxt in ("g", "gm"):    # tube grams on a topical = pack size
+                    i += 2; continue
                 mass.add(round(val * _MASS_UNITS[nxt], 4)); i += 2; continue
             if nxt in _KEEP_UNITS:
+                if drop_pack and nxt == "ml":           # tube/bottle ml = pack size
+                    i += 2; continue
                 other.add((round(val, 4), nxt)); i += 2; continue
             mass.add(round(val, 4))
         i += 1
@@ -103,7 +118,9 @@ def _fuzzy_lookup(conn, norm):
 
     qtok = set(qtokens)
     q_letters = {t for t in qtokens if len(t) == 1 and t.isalpha()}
-    q_mass, q_other = _strength_sigs(qtokens)
+    # On topical/powder queries, a gram/ml amount is the pack size, not a dose -> don't require it.
+    q_drop_pack = bool(qtok & _PACK_SIZE_FORMS)
+    q_mass, q_other = _strength_sigs(qtokens, drop_pack=q_drop_pack)
     q_brand = _brand_tokens(qtokens)
     best, best_score = None, 0.0
     for r in cands:
@@ -131,12 +148,42 @@ def _fuzzy_lookup(conn, norm):
     return (best, best_score) if best_score >= FUZZY_THRESHOLD else (None, best_score)
 
 
+def _salt_lookup(conn, norm):
+    """Match a GENERIC name ("Paracetamol 500 mg") by composition, preferring the plain
+    single-salt drug over a combo. Returns a representative (median-priced) row or None.
+
+    Without this, a plain generic query prefix-matches a combo product that merely starts
+    with the same words (e.g. "Paracetamol 500mg and Caffeine 25mg Tablet").
+    """
+    tokens = norm.split()
+    brand = [t for t in tokens if not _is_number(t) and t not in _STOP]
+    if not brand:
+        return None
+    salt_guess = " ".join(brand)                       # single-salt only (no '+')
+    q_mass, q_other = _strength_sigs(tokens, drop_pack=bool(set(tokens) & _PACK_SIZE_FORMS))
+    if not (q_mass or q_other):
+        return None                                    # need a strength to be safe
+    rows = conn.execute(
+        "SELECT * FROM drugs WHERE salt = ? AND strength_known = 1 "
+        "AND COALESCE(unit_price, mrp_inr) IS NOT NULL LIMIT 2000", (salt_guess,)
+    ).fetchall()
+    matches = []
+    for r in rows:
+        sm, so = _strength_sigs(normalize(r["strength"]).split())
+        if q_mass.issubset(sm) and q_other.issubset(so):
+            matches.append(r)
+    if not matches:
+        return None
+    matches.sort(key=_row_unit_price)
+    return matches[len(matches) // 2]                  # median-priced representative
+
+
 def _lookup_drug(conn, name):
     """Find the catalog row for a scanned name. Returns (row, match_type).
 
-    Order: (1) exact normalized, (2) catalog name is a prefix of the query,
-    (3) query is a prefix of a catalog name, (4) conservative fuzzy match.
-    match_type is one of 'exact' | 'prefix' | 'fuzzy' | None.
+    Order: (1) exact normalized, (2) generic salt-name match (plain over combo),
+    (3) catalog name is a prefix of the query, (4) query is a prefix of a catalog
+    name, (5) conservative fuzzy match. match_type: 'exact'|'generic'|'prefix'|'fuzzy'|None.
     """
     norm = normalize(name)
 
@@ -145,6 +192,10 @@ def _lookup_drug(conn, name):
     ).fetchone()
     if row:
         return row, "exact"
+
+    row = _salt_lookup(conn, norm)
+    if row:
+        return row, "generic"
 
     row = conn.execute(
         "SELECT * FROM drugs WHERE name_norm = substr(?, 1, length(name_norm)) "
