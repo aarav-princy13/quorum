@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Secrets / config
+.env
+*.key
+secrets.*
+
+# Output may hold large/generated artifacts — keep dir, ignore bulky contents by default
+output/*
+!output/.gitkeep
