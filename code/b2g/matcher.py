@@ -4,6 +4,7 @@ Matching here is deliberately simple (exact + normalized + leading-token). Real 
 output is fuzzy; robust fuzzy matching is a later task (see writeup/TODO.md).
 """
 
+import difflib
 import re
 import statistics
 
@@ -14,44 +15,114 @@ OUTLIER_FLOOR_FRAC = 0.2
 
 
 def normalize(text):
-    """Lowercase, collapse whitespace, strip punctuation — for tolerant name matching."""
+    """Lowercase, depunctuate, and split letter/digit runs — for tolerant matching.
+
+    Splitting "telma40" -> "telma 40" and "500mg" -> "500 mg" makes brand, number,
+    and unit separate tokens so receipt shorthand lines up with catalog names.
+    """
     text = (text or "").lower().strip()
-    text = re.sub(r"[^a-z0-9+ ]+", " ", text)   # keep '+' for salt combinations
+    text = re.sub(r"[^a-z0-9+ ]+", " ", text)        # keep '+' for salt combinations
+    text = re.sub(r"(?<=[a-z])(?=[0-9])", " ", text)  # telma40 -> telma 40
+    text = re.sub(r"(?<=[0-9])(?=[a-z])", " ", text)  # 500mg -> 500 mg
     return re.sub(r"\s+", " ", text).strip()
 
 
-def _lookup_drug(conn, name):
-    """Find the catalog row for a scanned name via the indexed name_norm column.
+_NUM_RE = re.compile(r"\d+(?:\.\d+)?")
+FUZZY_THRESHOLD = 0.55          # minimum blended score to accept a fuzzy match
 
-    Tries, in order: (1) exact normalized match, (2) a catalog name that is a
-    prefix of the query ("crocin 500 tablet" -> "crocin 500"), (3) the query as a
-    prefix of a catalog name. Returns a sqlite3.Row or None.
+
+def _name_numbers(text):
+    """Numeric tokens in a name (the printed strength, e.g. {500.0}). Used as a guard."""
+    return {float(x) for x in _NUM_RE.findall(text or "")}
+
+
+def _discriminators(tokens):
+    """Tokens that distinguish DIFFERENT drugs and must be preserved in any match:
+    anything with a digit (500, 40, d3, b12) and single letters (vitamin c vs a).
+    Generic words (tablet, sr, duo) are intentionally excluded."""
+    out = set()
+    for t in tokens:
+        if any(c.isdigit() for c in t) or (len(t) == 1 and t.isalpha()):
+            out.add(t)
+    return out
+
+
+def _esc_like(s):
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _fuzzy_lookup(conn, norm):
+    """Conservative fuzzy match for messy/OCR'd names.
+
+    Blocks on the brand prefix (first token) for speed, then ranks by a blend of
+    string similarity + token overlap. SAFETY: if the query has a printed strength
+    number and a candidate also has one but they DISAGREE, the candidate is
+    rejected — we never substitute a different strength (e.g. "Glycomet 500" must
+    not match the combo "Glycomet-GP 1"). Returns (row, score) or (None, 0).
+    """
+    qtokens = norm.split()
+    if not qtokens:
+        return None, 0.0
+    brand = qtokens[0]
+    prefix = brand[:4] if len(brand) >= 4 else brand
+    cands = conn.execute(
+        "SELECT * FROM drugs WHERE name_norm LIKE ? ESCAPE '\\' LIMIT 5000",
+        (_esc_like(prefix) + "%",),
+    ).fetchall()
+    if not cands:
+        return None, 0.0
+
+    qtok = set(qtokens)
+    qdisc = _discriminators(qtokens)
+    best, best_score = None, 0.0
+    for r in cands:
+        cn = r["name_norm"] or ""
+        ctok = set(cn.split())
+        # SAFETY: every distinguishing token (strength, vitamin letter, ...) must be
+        # present in the candidate — blocks "Vitamin C"->"Vitamin A", "500"->"1gm", etc.
+        if not qdisc.issubset(ctok):
+            continue
+        ratio = difflib.SequenceMatcher(None, norm, cn).ratio()
+        jacc = len(qtok & ctok) / len(qtok | ctok) if (qtok | ctok) else 0.0
+        score = 0.6 * ratio + 0.4 * jacc
+        if score > best_score:
+            best, best_score = r, score
+    return (best, best_score) if best_score >= FUZZY_THRESHOLD else (None, best_score)
+
+
+def _lookup_drug(conn, name):
+    """Find the catalog row for a scanned name. Returns (row, match_type).
+
+    Order: (1) exact normalized, (2) catalog name is a prefix of the query,
+    (3) query is a prefix of a catalog name, (4) conservative fuzzy match.
+    match_type is one of 'exact' | 'prefix' | 'fuzzy' | None.
     """
     norm = normalize(name)
 
-    # 1) exact normalized match (uses idx_drugs_name_norm); cheapest if duplicates
     row = conn.execute(
         "SELECT * FROM drugs WHERE name_norm = ? ORDER BY mrp_inr LIMIT 1", (norm,)
     ).fetchone()
     if row:
-        return row
+        return row, "exact"
 
-    # 2) a stored name_norm is a leading prefix of the query -> most specific wins
     row = conn.execute(
         "SELECT * FROM drugs WHERE name_norm = substr(?, 1, length(name_norm)) "
         "AND length(name_norm) >= 3 ORDER BY length(name_norm) DESC, mrp_inr LIMIT 1",
         (norm,),
     ).fetchone()
     if row:
-        return row
+        return row, "prefix"
 
-    # 3) the query is a prefix of a stored name (index-friendly: no leading wildcard)
     row = conn.execute(
         "SELECT * FROM drugs WHERE name_norm LIKE ? ESCAPE '\\' "
         "ORDER BY length(name_norm) ASC, mrp_inr LIMIT 1",
-        (norm.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + " %",),
+        (_esc_like(norm) + " %",),
     ).fetchone()
-    return row
+    if row:
+        return row, "prefix"
+
+    row, _score = _fuzzy_lookup(conn, norm)
+    return (row, "fuzzy") if row else (None, None)
 
 
 def _row_unit_price(row):
@@ -70,7 +141,7 @@ def find_alternatives(conn, name):
     Returns a dict with: matched, alternatives (cheapest-first), cheapest,
     savings_per_unit / savings_pct / savings_pack (savings for one matched-pack).
     """
-    matched = _lookup_drug(conn, name)
+    matched, match_type = _lookup_drug(conn, name)
     if matched is None:
         return {"query": name, "matched": None, "alternatives": [], "cheapest": None}
 
@@ -137,6 +208,7 @@ def find_alternatives(conn, name):
             "units": matched["units"],
             "schedule": matched["schedule"],
             "pack": matched["pack"],
+            "match_type": match_type,
         },
         "alternatives": alternatives,
         "cheapest": cheapest,

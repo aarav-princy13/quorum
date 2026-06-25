@@ -22,7 +22,7 @@
 - [x] **Real nearby pharmacy locations** from OpenStreetMap Overpass (`ingest_pharmacies.py`), ranked by real haversine distance. (Jan Aushadhi `getNearByKendra`/`getAllKendra` endpoints 500'd on undocumented payloads → used OSM instead, which is also neutral/vendor-agnostic — better fit for the wedge)
 - [ ] Fuller pharmacy coverage: OSM is sparse in India (~15 in tricity) → add Google Places and/or Jan Aushadhi Kendra directory for production
 - [ ] Validate the curated H/H1/X salt lists against the official gazette
-- [ ] Harden brand-name matching (fuzzy) for messy OCR text (e.g. "Glycomet 500 Tablet" missed)
+- [x] Fuzzy brand-name matching (stdlib `difflib`) for messy/OCR text — precision-first with a discriminator guard (no wrong-drug/strength matches); flags `≈ approx`; regression suite `code/test_matching.py` (PASS). Remaining: OCR brand-typo cases (e.g. "Crocln") are a deliberate safe-miss
 - [ ] **Benchmark OCR engines on 5–10 real Indian pharmacy receipts** (ML Kit vs Granite-Docling vs small VLM)
 - [ ] (optional) stdlib `http.server` API layer so a client can call the pipeline
 

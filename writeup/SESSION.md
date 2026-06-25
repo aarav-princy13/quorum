@@ -150,3 +150,19 @@ feature, still on fake seed data, and pairs with the JA prices).
   12.6 km). Report shows distance + ✓ marker for Jan Aushadhi Kendras.
 - Honest caveat: **OSM pharmacy coverage in India is sparse**; production needs Google Places or the
   Jan Aushadhi Kendra directory. Now every layer (catalog, official prices, locations) is REAL data.
+
+## 2026-06-25 — Session 1 (cont. 6): Fuzzy name matching (precision-first)
+
+Owner: do fuzzy name matching next.
+- **Analyzed failures first**: current exact/prefix got 5/10 on receipt-style names. Failure modes:
+  extra tokens (`Glycomet 500 SR Tablet`), `500` vs `500mg`, abbreviations (`Tab`), no-space (`Telma40`).
+- Built a conservative **stdlib `difflib`** fuzzy fallback in `_lookup_drug` (blocks on brand prefix,
+  scores by string ratio + token Jaccard). `_lookup_drug` now returns `(row, match_type)`.
+- **Safety bar = precision over recall** (wrong drug worse than a miss). Two guards:
+  - letter↔digit split in `normalize` (`telma40`→`telma 40`, `500mg`→`500 mg`) — also helps exact/prefix.
+  - **discriminator guard**: every distinguishing token (numbers, single letters, `b12`/`d3`) must be in
+    the candidate. **Caught a dangerous false positive** in testing: `Vitamin C`→`Vitamin A` (0.63);
+    the guard now forces `Vitamin C`→a Vitamin-C product, and `Glycomet 500`↛ combo `Glycomet-GP`.
+- Report flags fuzzy hits as `≈ approx match: <name>` for user verification.
+- Added regression suite `code/test_matching.py` (asserts composition + safety) → **PASS, 0 wrong**.
+  10/10 functional + safety negatives; the one deliberate miss is an OCR brand typo (`Crocln`) = safe.

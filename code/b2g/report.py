@@ -20,7 +20,8 @@ def build_report(result, pharmacies=None, title="receipt analysis"):
             lines.append(f"• {it['query']}  (x{it['qty']})  —  not found in catalog")
             continue
         m = it["matched"]
-        lines.append(f"• {it['query']}  (x{it['qty']})")
+        approx = f"   ≈ approx match: {m['name']}" if m.get("match_type") == "fuzzy" else ""
+        lines.append(f"• {it['query']}  (x{it['qty']}){approx}")
         lines.append(
             f"    composition : {m['salt']} {m['strength']} ({m['form'] or 'n/a'})  "
             f"[{m['pack']}]  MRP {rupees(m['mrp_inr'])} = {rupees(m['unit_price'])}/unit"

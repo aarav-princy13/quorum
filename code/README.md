@@ -48,7 +48,19 @@ code/
   analyze_salts.py    review tool: surface candidate salt variants for the synonym map
   demo.py             end-to-end demo on seed data
   query.py            query the real DB with brand names
+  test_matching.py    regression tests for name matching (precision + safety)
 ```
+
+## Name matching (exact → prefix → fuzzy)
+Receipt names are messy (`Glycomet 500 Tablet`, `Pan 40 Tab`, `Telma40`). Matching tries
+exact, then prefix, then a conservative **stdlib `difflib`** fuzzy match. Precision is
+prioritized over recall — a wrong drug/strength is worse than a miss — via two guards:
+- **Discriminator guard:** every distinguishing token (strength numbers, single letters like
+  the vitamin in `Vitamin C`, `b12`/`d3`) must appear in the candidate, so `Vitamin C` never
+  matches `Vitamin A` and `Glycomet 500` never matches the combo `Glycomet-GP 1`.
+- **Score threshold** (`matcher.FUZZY_THRESHOLD`); below it we report "not found" rather than guess.
+Fuzzy matches are flagged `≈ approx match` in the report so the user can verify.
+Run `python3 code/test_matching.py` for the regression suite.
 
 ## Authoritative prices (Jan Aushadhi)
 Official PMBJP prices are ingested as `is_authoritative=1` rows. They are **exempt from the
