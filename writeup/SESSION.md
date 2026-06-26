@@ -232,3 +232,18 @@ Owner: do #2 and #4.
 - Benchmark **2→5 matched** (the 7 misses are now 4 correct safe non-matches + 2 acceptable +
   1 coverage gap Doxozest). Added 4 regression cases to `code/test_matching.py` → 17 cases PASS,
   0 wrong. All four benchmark findings (#1–#4) now resolved; only coverage remains.
+
+## 2026-06-25 — Session 1 (cont. 11): App design direction (pre-scaffold)
+
+Owner wants a modern, clean, shadcn-style app (not "vibecoded"). Asked to install two design skills.
+- Installed **impeccable** (global → `~/.claude/skills/impeccable`) and **taste-skill**'s 13 sub-skills
+  (copied to `~/.claude/skills/`: minimalist-ui, soft, brandkit, redesign, …). Both **web-oriented** —
+  principles transfer to Flutter, code-gen doesn't. **Disabled** impeccable's per-edit hook for this repo.
+- Design thinking grounded in those skills; rendered 3 in-chat mockups (results screen, style tile,
+  accent/Hindi comparison).
+- **Locked the design system** → `writeup/DESIGN.md`: neutral shadcn + **one indigo accent**; color =
+  meaning (green save / amber Rx / red strict); **light default + dark**; **Geist** (Latin) + **Noto Sans
+  Devanagari** (Hindi), bundled; `shadcn_ui`; dense bordered rows (no card-slop); impeccable slop-bans.
+  App in **`code/app/`**.
+- **Handoff:** owner scaffolds in a NEW session. Flutter SDK **NOT installed** (Xcode 27 is) — install
+  first. Full spec/tokens/screens/Flutter notes in writeup/DESIGN.md.

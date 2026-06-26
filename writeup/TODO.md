@@ -36,7 +36,16 @@
 - [ ] Safety/abuse flagging + warning UX
 - [ ] Nearby-pharmacy lookup (data source TBD)
 
-## Phase 3 — Product
+## Phase 3 — Flutter app (design locked; scaffold in a fresh session)
+- [x] Design system locked → **writeup/DESIGN.md** (indigo accent, Geist + Noto Sans Devanagari, light+dark, shadcn_ui, semantic color, impeccable bans). Skills installed: impeccable + taste-skill.
+- [ ] **Install Flutter SDK first** (not present; Xcode 27 is). Then `flutter create code/app`
+- [ ] Theme from DESIGN.md tokens (light+dark, `ShadThemeData`); bundle Geist + NotoSansDevanagari fonts
+- [ ] Screens: capture → analyzing → results (the mockup) → item detail → nearby → settings (mock data first)
+- [ ] Dart API client porting `client_example.py` HMAC signing → call the secured backend
+- [ ] On-device OCR seam (`google_mlkit_text_recognition`) → parse line items → POST
+- [ ] On-device OCR engine benchmark (ML Kit vs Granite-Docling via MLX on the M4) on real receipts
+
+## Phase 4 — Product
 - [ ] End-to-end demo: receipt photo → savings + nearby options
 - [ ] Disclaimers / legal review of safety + facilitation claims
 - [ ] Single-city pilot
