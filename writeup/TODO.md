@@ -17,6 +17,8 @@
 - [x] Salt-based Schedule H/H1/X classifier; same-form + per-unit + outlier-floor matching
 - [x] Salt/strength canonicalization (`b2g/normalize.py`) + robust multi-paren parser; **evidence-first** (see DATA_CLEANING.md). Found the dataset already salt-consistent; real win = unknown-dose safety guard (3,474 products quarantined) + cross-source synonym infra
 - [x] Add **authoritative Jan Aushadhi/PMBJP prices** via its public JSON API (`ingest_janaushadhi.py`): 2,052 priced products, ~950 match brand comps, 1,572 anchors; shown as ✓Jan Aushadhi, exempt from outlier floor
+- [ ] **SAFETY (high priority, found on real receipt pharm_5):** add DMARDs/specialty Rx salts to `_SALTS_H` — leflunomide, hydroxychloroquine, sulfasalazine, azathioprine, mycophenolate, tofacitinib, etc. (Lefra/HCQS currently show OTC; re-ingest after). See BENCHMARK.md.
+- [ ] Coverage/match misses on pharm_5: Saridon, Crocin 650, Shelcal 500, Evion 400 (common brands — combo/coverage; investigate)
 - [ ] **NPPA ceiling prices** — investigated, PDF/portal-locked (no clean API). Options: data.gov.in key / PDF dep (needs approval) / curated subset. Deferred (see DATA_SOURCES.md)
 - [ ] Improve Jan Aushadhi coverage (some commons miss: e.g. amox-clav 625 single; combo strength alignment edge cases)
 - [x] **Real nearby pharmacy locations** from OpenStreetMap Overpass (`ingest_pharmacies.py`), ranked by real haversine distance. (Jan Aushadhi `getNearByKendra`/`getAllKendra` endpoints 500'd on undocumented payloads → used OSM instead, which is also neutral/vendor-agnostic — better fit for the wedge)

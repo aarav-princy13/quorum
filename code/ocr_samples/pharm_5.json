@@ -1,0 +1,20 @@
+{
+  "receipt": "pharm_5",
+  "vendor": "Sant Pharmacy, Sector 11D Chandigarh",
+  "format": "jpg (photo)",
+  "note": "REAL (non-sample) receipt. Rheumatoid-arthritis regimen — DMARDs/steroid/analgesics + supplements. Doctor: PGI. Patient name redacted.",
+  "items": [
+    {"name": "EYEMIST EYE DROP", "qty": 1, "printed_mrp": 230.63},
+    {"name": "SARIDON TAB", "qty": 20, "printed_mrp": 51.55},
+    {"name": "FOLITRAX 10MG", "qty": 10, "printed_mrp": 70.98},
+    {"name": "LEFRA 20MG", "qty": 40, "printed_mrp": 301.85},
+    {"name": "FOLITRAX 15MG TAB", "qty": 10, "printed_mrp": 283.47},
+    {"name": "CROCIN 650MG", "qty": 30, "printed_mrp": 32.13},
+    {"name": "SHELCAL 500MG", "qty": 30, "printed_mrp": 163.45},
+    {"name": "HCQS 300", "qty": 30, "printed_mrp": 345.75},
+    {"name": "PREGEB OD 75MG", "qty": 40, "printed_mrp": 224.00},
+    {"name": "EVION 400 MG", "qty": 40, "printed_mrp": 89.57},
+    {"name": "WYSOLONE 5MG", "qty": 30, "printed_mrp": 10.82},
+    {"name": "FLEXON TAB", "qty": 15, "printed_mrp": 32.20}
+  ]
+}

@@ -71,6 +71,22 @@ to two specific, fixable matching bugs.
   generic descriptors/homeopathy/packaging — 2 acceptable, 1 real coverage gap: Doxozest).
   Added regression cases for all four to `code/test_matching.py` → PASS (0 wrong).
 
+## pharm_5 — first REAL (non-sample) receipt (2026-06-25)
+Sant Pharmacy, Chandigarh — a rheumatoid-arthritis regimen (12 items). **8/12 matched**, 4
+correctly flagged Rx, large savings (Jan Aushadhi anchors on methotrexate/leflunomide/pregabalin).
+- ✓ Correctly flagged **[H]**: Folitrax 10/15 (methotrexate), Pregeb (pregabalin), Wysolone (prednisolone).
+- ⚠️ **NEW safety gap**: `LEFRA` (leflunomide) and `HCQS` (hydroxychloroquine) matched but show **[OTC]** —
+  both are prescription-only DMARDs (leflunomide is teratogenic). The curated schedule list is missing
+  DMARDs/specialty salts. **Fix: add leflunomide, hydroxychloroquine, sulfasalazine, azathioprine,
+  mycophenolate, tofacitinib, etc. to `_SALTS_H`.** (Same root cause as the remdesivir gap.)
+- ✓ Matched well: Eyemist (HPMC eye drops, 54% off), Flexon (ibuprofen+paracetamol, 84% off), HCQS,
+  Pregeb, Wysolone — all via fuzzy/salt-lookup on real brand names.
+- ✗ Coverage/match misses: **Saridon** (paracetamol+propyphenazone+caffeine combo), **Crocin 650**
+  (paracetamol 650 — surprising; investigate), **Shelcal 500** (calcium+vit-D3 combo), **Evion 400**
+  (vitamin E). Common brands — likely combo-composition or brand-coverage gaps. Worth a look.
+- Takeaway: matching held up on a real, messy photo receipt; the actionable gap is **schedule
+  coverage for DMARDs/specialty drugs** (safety) plus a few common-brand matches (recall).
+
 ## What worked
 - Format-agnostic (webp/jpg/png all handled). Fuzzy match resolved `REMDAC` → remdesivir.
 - **Safe-by-default**: homeopathy, saline, generic descriptors, and packaging correctly did
