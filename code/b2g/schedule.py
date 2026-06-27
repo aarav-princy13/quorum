@@ -59,34 +59,51 @@ def classify_schedule(schedule):
 # ---------------------------------------------------------------------------
 
 # Schedule X — narcotic/psychotropic, strictest control (duplicate prescription).
+# Source: Drugs and Cosmetics Rules, Schedule X (16 substances). methaqualone is a
+# deliberate conservative addition (banned/NDPS in India). Barbiturates are spelled
+# in full (both -al/-one spellings); we omit a bare "barbital"/"barbitone" token on
+# purpose, because as a substring it would mis-flag "phenobarbital"/"phenobarbitone"
+# (a Schedule H anticonvulsant) as X. See writeup/SAFETY_AUDIT.md.
 _SALTS_X = frozenset({
     "amphetamine", "dexamphetamine", "methamphetamine", "methylphenidate",
-    "amobarbital", "barbital", "pentobarbital", "secobarbital", "methaqualone",
-    "glutethimide", "ketamine",
+    "amobarbital", "amobarbitone", "pentobarbital", "pentobarbitone",
+    "secobarbital", "secobarbitone", "cyclobarbital", "cyclobarbitone",
+    "methylphenobarbital", "methylphenobarbitone",
+    "ethchlorvynol", "glutethimide", "meprobamate", "methaqualone",
+    "phenmetrazine", "phencyclidine", "ketamine",
 })
 
-# Schedule H1 — prescription-only, higher misuse/overdose risk (record kept).
+# Schedule H1 — prescription-only, higher misuse/overdose risk (sale recorded).
+# Source: Drugs and Cosmetics Rules, Schedule H1 (2013 list of 46 drugs + the later
+# additions oxytocin and tapentadol). Entries tagged [conservative] are NOT in the
+# official H1 list (they are Schedule H) but are habit-forming, so we flag them at
+# the higher H1 tier on purpose. See writeup/SAFETY_AUDIT.md.
 _SALTS_H1 = frozenset({
-    # habit-forming / psychotropic
-    "alprazolam", "buprenorphine", "chlordiazepoxide", "clonazepam", "codeine",
-    "diazepam", "diphenoxylate", "lorazepam", "midazolam", "nitrazepam",
-    "pentazocine", "tramadol", "zolpidem", "zopiclone",
-    # anti-TB
+    # habit-forming / psychotropic (official H1)
+    "alprazolam", "buprenorphine", "chlordiazepoxide", "codeine", "diazepam",
+    "diphenoxylate", "midazolam", "nitrazepam", "pentazocine", "tramadol",
+    "tapentadol", "zolpidem", "oxytocin",
+    # habit-forming [conservative — officially Schedule H, flagged H1 for abuse risk]
+    "clonazepam", "lorazepam", "zopiclone",
+    # anti-TB (official H1)
     "capreomycin", "cycloserine", "ethambutol", "ethionamide", "isoniazid",
-    "pyrazinamide", "rifabutin", "rifampicin",
-    # newer antibiotics / cephalosporins / carbapenems / fluoroquinolones
+    "pyrazinamide", "rifabutin", "rifampicin", "clofazimine", "thiacetazone",
+    "para-aminosalicylic", "para aminosalicylic",
+    # 3rd/4th-gen cephalosporins, carbapenems, newer fluoroquinolones (official H1)
     "cefdinir", "cefditoren", "cefepime", "cefetamet", "cefixime", "cefoperazone",
     "cefotaxime", "cefpirome", "cefpodoxime", "ceftazidime", "ceftibuten",
-    "ceftizoxime", "ceftriaxone", "cefuroxime", "doripenem", "ertapenem",
-    "faropenem", "imipenem", "meropenem", "sulbactam", "tigecycline",
-    "balofloxacin", "gemifloxacin", "moxifloxacin", "prulifloxacin", "sparfloxacin",
+    "ceftizoxime", "ceftriaxone", "doripenem", "ertapenem", "faropenem",
+    "imipenem", "meropenem",
+    "balofloxacin", "gemifloxacin", "levofloxacin", "moxifloxacin",
+    "prulifloxacin", "sparfloxacin",
 })
 
 # Schedule H — common prescription-only drugs (non-exhaustive curated set).
 _SALTS_H = frozenset({
     "amoxycillin", "amoxicillin", "ampicillin", "azithromycin", "cefalexin",
     "cephalexin", "clarithromycin", "clindamycin", "ciprofloxacin", "ofloxacin",
-    "levofloxacin", "norfloxacin", "doxycycline", "metronidazole", "ornidazole",
+    "norfloxacin", "doxycycline", "metronidazole", "ornidazole",
+    "cefuroxime", "sulbactam", "tigecycline",   # Rx antibiotics; Schedule H, NOT H1
     "fluconazole", "itraconazole", "acyclovir", "metformin", "glimepiride",
     "gliclazide", "sitagliptin", "telmisartan", "losartan", "olmesartan",
     "amlodipine", "ramipril", "enalapril", "atenolol", "metoprolol",
@@ -95,7 +112,8 @@ _SALTS_H = frozenset({
     "dexamethasone", "methylprednisolone", "levothyroxine", "warfarin",
     "aceclofenac", "etoricoxib", "gabapentin", "pregabalin", "sertraline",
     "escitalopram", "fluoxetine", "amitriptyline", "olanzapine", "risperidone",
-    "levetiracetam", "valproate", "carbamazepine", "salbutamol", "budesonide",
+    "levetiracetam", "valproate", "carbamazepine", "phenytoin", "phenobarbital",
+    "phenobarbitone", "salbutamol", "budesonide",
     "tamsulosin", "finasteride", "sildenafil", "tadalafil",
     # antivirals (prescription-only; several are restricted hospital drugs)
     "remdesivir", "favipiravir", "molnupiravir", "oseltamivir", "valacyclovir",

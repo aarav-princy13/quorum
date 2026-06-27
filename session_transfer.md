@@ -156,7 +156,13 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
 6. **Backend coverage:** add more brand aliases as real receipts surface them; consider a **typo-tolerant
    fuzzy** block to catch the HCQS↔HQS class generically (precision/perf tradeoff — currently handled by
    alias). Compositions genuinely absent from the dataset (Saridon's propyphenazone) need richer data, not code.
-7. **Safety:** validate curated H/H1/X salt lists vs the official gazette.
+7. **Safety — gazette reconciliation DONE (2026-06-27):** H1/X salt lists reconciled vs the official
+   Drugs & Cosmetics Rules Schedule X (16) + H1 (46 + oxytocin/tapentadol). Fixed under-flags
+   (phenobarbitone/phenytoin→H, clofazimine/oxytocin/tapentadol→H1, levofloxacin→H1), over-flags
+   (cefuroxime/sulbactam/tigecycline H1→H), and a substring collision (phenobarbital must NOT be X).
+   Conservative overrides documented (clonazepam/lorazepam/zopiclone H1; methaqualone X). Full writeup +
+   sources: `writeup/SAFETY_AUDIT.md`. Guarded by NEW **`python3 code/test_safety.py`** (0 failures).
+   Ran `recompute_schedule.py` (6000 rows). Still open: `_SALTS_H` stays non-exhaustive (demand-driven).
 8. **Gold sync:** apply the corrections already in `code/ocr_bench/gold/` back to `code/ocr_samples/`
    (pharm_1 NS qty 2→3; pharm_5 PREGEB/FLEXON MRPs) so the pipeline benchmark agrees.
 9. **Production hardening:** real TLS cert + cert pinning in release (debug accepts self-signed), per-install
@@ -167,6 +173,8 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
 - `python3 code/test_matching.py` → **0 failures** (precision guard, incl. Saridon must-not-match).
 - `python3 code/test_pipeline.py` → **0 failures** (savings never overstate: line = per_unit × qty, not
   per-pack × qty; unknown qty → one pack).
+- `python3 code/test_safety.py` → **0 failures** (H/H1/X gazette reconciliation incl. phenobarbital-not-X
+  guard + conservative overrides). After editing `b2g/schedule.py`, re-run `recompute_schedule.py`.
 - `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser real-box + signing +
   screens smoke tests; 10 total).
 - `code/app/lib/data/sample_result.dart` IS tracked — the `.gitignore` `data/` rule is now root-anchored
