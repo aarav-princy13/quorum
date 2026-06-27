@@ -47,8 +47,12 @@ bucket is empty → `429` + `Retry-After`. Plus a global in-flight concurrency c
 
 ## Input hardening
 - Max body 16 KB (reject larger / missing / chunked). Strict JSON.
-- `items`: 1–50 entries; `name`: str 1–120 chars; `qty`: int 1–99. `location` optional, ranges
-  checked. Unknown/oversized → `400`. (SQLi already covered by parameterized queries.)
+- `items`: 1–50 entries; `name`: str 1–120 chars; `qty` **optional** int 1–99 (omit = unknown).
+  `location` optional, ranges checked. Unknown/oversized → `400`. (SQLi already covered by
+  parameterized queries.)
+- **Savings semantics:** `savings_inr_line = savings_per_unit * qty` (units bought × per-unit gap),
+  never `savings_pack * qty` — the latter overstates ~pack-size×. Omitted qty falls back to one pack
+  (`pack units`), the realistic minimum, so an unknown count estimates without overstating.
 
 ## Privacy & data handling
 - **No-content logging:** never log drug names or bodies. Log only metadata (ts, status,

@@ -20,15 +20,21 @@ def process_receipt(conn, line_items):
 
     for li in line_items:
         name = li.get("name", "")
-        qty = int(li.get("qty", 1) or 1)
+        raw_qty = li.get("qty")                       # None = receipt had no usable qty
 
         alt = find_alternatives(conn, name)
         schedule_code = alt["matched"]["schedule"] if alt["matched"] else ""
         safety = classify_schedule(schedule_code)
 
-        # savings_pack = saving to buy one matched-pack-equivalent at the cheaper unit price.
+        # Savings scale with the number of UNITS (tablets/ml) bought, priced at the
+        # per-unit gap — never per pack, which would multiply by pack size and
+        # overstate. When the receipt gives no qty, fall back to one pack worth
+        # (the realistic minimum purchase), so we estimate without overstating.
+        per_unit = alt.get("savings_per_unit", 0.0)
+        pack_units = int(alt["matched"]["units"] or 1) if alt["matched"] else 1
+        qty = raw_qty if isinstance(raw_qty, int) else pack_units
+        line_savings = round(per_unit * qty, 2)
         savings_pack = alt.get("savings_pack", 0.0)
-        line_savings = round(savings_pack * qty, 2)
         total_savings += line_savings
         if safety["requires_rx_confirmation"]:
             flagged += 1

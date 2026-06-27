@@ -76,10 +76,13 @@ def validate_payload(obj):
         name = it.get("name")
         if not isinstance(name, str) or not (1 <= len(name) <= MAX_NAME):
             raise ValueError("item.name must be a 1..%d char string" % MAX_NAME)
-        qty = it.get("qty", 1)
-        if not isinstance(qty, int) or isinstance(qty, bool) or not (1 <= qty <= 99):
-            raise ValueError("item.qty must be an int 1..99")
-        clean.append({"name": name, "qty": qty})
+        item = {"name": name}
+        if "qty" in it and it["qty"] is not None:   # qty is optional (omitted = unknown)
+            qty = it["qty"]
+            if not isinstance(qty, int) or isinstance(qty, bool) or not (1 <= qty <= 99):
+                raise ValueError("item.qty must be an int 1..99")
+            item["qty"] = qty
+        clean.append(item)
     loc = obj.get("location")
     location = _parse_location(loc) if loc is not None else None
     return clean, location

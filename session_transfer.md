@@ -141,8 +141,13 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
    `NEARBY_MAX_KM`=50 (a US point → empty, honestly, vs India-only data). iOS
    `NSLocationWhenInUseUsageDescription` + Android COARSE/FINE perms added; Settings privacy note covers it.
    Still TODO: a **map** view (next). (`flutter run` auto-runs `pod install` for the new plugins.)
-3. **Parser polish:** real qty extraction (currently 1 → understates line savings); optionally strip the
-   "34.27 |" S.No prefix on-device (backend already tolerates it).
+3. **Parser polish — qty extraction DONE:** column mode now reads per-line qty from a detected "Qty"
+   header, aligned by row, validated 1–99, ambiguity/none → unknown (parser `LineItem.qty` is `int?`,
+   omitted from the payload; flat OCR stays unknown). **Backend savings semantics FIXED** (`pipeline.py`):
+   `line = savings_per_unit * qty` (was `savings_pack * qty`, which overstated ~pack-size× — a real bug);
+   unknown qty falls back to one pack. `qty` is now **optional** in `validate_payload`. Guarded by NEW
+   **`python3 code/test_pipeline.py`** (0 failures; keep it so). Still optional: strip the "34.27 |" S.No
+   prefix on-device (backend already tolerates it).
 4. **On-device OCR productionization:** validate ML Kit on a real Android device; decide if/how to integrate
    the **DeepSeek-OCR VLM tier** for 8GB+ phones (real native lift — Apple Vision is already 90, so likely
    not worth it for v1). The Analyzing screen still has a `[ocrbox]` debug dump (debug builds only) for tuning.
@@ -160,6 +165,8 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
 
 ## 10. Known-good invariants (don't regress)
 - `python3 code/test_matching.py` → **0 failures** (precision guard, incl. Saridon must-not-match).
+- `python3 code/test_pipeline.py` → **0 failures** (savings never overstate: line = per_unit × qty, not
+  per-pack × qty; unknown qty → one pack).
 - `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser real-box + signing +
   screens smoke tests; 10 total).
 - `code/app/lib/data/sample_result.dart` IS tracked — the `.gitignore` `data/` rule is now root-anchored
