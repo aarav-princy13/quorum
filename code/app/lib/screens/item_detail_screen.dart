@@ -128,11 +128,15 @@ class _CurrentPriceBlock extends StatelessWidget {
               ),
               if (matched.mrpInr != null) ...[
                 const SizedBox(width: 8),
-                Text(
-                  'MRP ${rupees(matched.mrpInr!)}'
-                  '${matched.pack.isNotEmpty ? ' · ${matched.pack}' : ''}',
-                  style: TextStyle(
-                      fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+                Flexible(
+                  child: Text(
+                    'MRP ${rupees(matched.mrpInr!)}'
+                    '${matched.pack.isNotEmpty ? ' · ${matched.pack}' : ''}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+                  ),
                 ),
               ],
             ],
