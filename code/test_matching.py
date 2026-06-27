@@ -41,6 +41,8 @@ SHOULD_MATCH = [
     ("EVION 400 MG", "vitamin e", "400mg"),
     ("SHELCAL 500MG", "calcium+vitamin d3", None),   # combo strength varies
     ("HQS 300 N", "hydroxychloroquine", "300mg"),    # OCR garble of HCQS + stray "N"
+    ("DOXOZEST INJ 50MG", "doxorubicin", "50mg"),    # real pharm_4 miss -> alias (injection route)
+    ("Disprin 325", "aspirin", "325mg"),             # alias -> oral tablet (not an injectable)
 ]
 
 # queries that must NEVER resolve to the WRONG drug (None = either miss, or match
@@ -50,6 +52,14 @@ MUST_NOT_MISMATCH = [
     ("Xyzqwer 500", None),               # junk -> must be NOT FOUND
     ("random text here", None),          # junk -> must be NOT FOUND
     ("Saridon Tab", None),               # propyphenazone absent from catalog -> must NOT guess a wrong combo
+]
+
+# (query, expected catalog-form family) — route must be preserved; an oral brand
+# must never resolve to an injectable equivalent, and vice versa.
+ROUTE_OK = [
+    ("Disprin 325", {"tablet", "capsule", ""}),       # oral brand -> oral generic
+    ("DOXOZEST INJ 50MG", {"injection"}),             # injectable -> injectable
+    ("CROCIN 650MG", {"tablet", "capsule", ""}),
 ]
 
 
@@ -79,6 +89,16 @@ def main():
             print(f"  ok     {q!r} -> {m['name']!r} [{m['salt']}] (right family)")
         else:
             print(f"  UNSAFE {q!r} -> {m['name']!r} [{m['salt']}]")
+            failures += 1
+
+    for q, ok_forms in ROUTE_OK:
+        m = find_alternatives(conn, q)["matched"]
+        form = (m["form"] or "").strip().lower() if m else None
+        if m and form in ok_forms:
+            print(f"  ok     {q!r} -> route {form or 'oral'!r}")
+        else:
+            print(f"  ROUTE  {q!r} -> {m['name']!r} form={form!r} (expected one of {ok_forms})"
+                  if m else f"  ROUTE  {q!r} -> NOT FOUND")
             failures += 1
 
     print(f"\n{'FAIL' if failures else 'PASS'}: {failures} failure(s)")

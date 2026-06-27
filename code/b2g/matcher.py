@@ -52,6 +52,33 @@ _PACK_SIZE_FORMS = frozenset({
 })
 
 
+# Route families. Oral solids, injectables, topicals, etc. are NOT interchangeable,
+# so a brand-alias / generic lookup must return a same-route representative.
+_QUERY_FORM_FAMILY = {  # form word in the scanned query -> family
+    "injection": "inj", "injections": "inj", "inj": "inj", "infusion": "inj", "vial": "inj",
+    "drops": "drops", "drop": "drops",
+    "cream": "topical", "ointment": "topical", "oint": "topical", "gel": "topical",
+    "lotion": "topical", "paste": "topical", "spray": "topical", "dust": "topical",
+    "syrup": "liquid", "suspension": "liquid", "solution": "liquid", "syp": "liquid",
+    "inhaler": "inhaler",
+}
+_CATALOG_FORM_FAMILY = {  # catalog `form` column -> family ('' / tablet / capsule = oral)
+    "injection": "inj", "drops": "drops",
+    "cream": "topical", "ointment": "topical", "gel": "topical", "lotion": "topical",
+    "spray": "topical", "syrup": "liquid", "suspension": "liquid", "solution": "liquid",
+    "inhaler": "inhaler",
+}
+
+
+def _query_form_family(tokens):
+    """The route the scanned query names (inj/drops/topical/liquid/inhaler), or None."""
+    for t in tokens:
+        fam = _QUERY_FORM_FAMILY.get(t)
+        if fam:
+            return fam
+    return None
+
+
 def _is_number(t):
     return bool(t) and t.replace(".", "", 1).isdigit()
 
@@ -166,6 +193,25 @@ def _composition_match(conn, salt, tokens):
             matches.append(r)
     if not matches:
         return None
+
+    # Stay on the query's route. If it names a form, restrict strictly to that
+    # family (never substitute an injection for an oral tablet). If it names none,
+    # prefer oral solids but fall back to any form (route unknown -> best effort).
+    fam = _query_form_family(tokens)
+
+    def cat_fam(r):
+        return _CATALOG_FORM_FAMILY.get((r["form"] or "").strip().lower(), "oral")
+
+    if fam:
+        matches = [r for r in matches if cat_fam(r) == fam]
+    else:
+        oral = [r for r in matches if cat_fam(r) == "oral"]
+        # A formless "Brand strength" query is never an injection; if there's no
+        # oral form, fall back to other non-parenteral forms but NEVER substitute
+        # an injectable for it.
+        matches = oral if oral else [r for r in matches if cat_fam(r) != "inj"]
+    if not matches:
+        return None
     matches.sort(key=_row_unit_price)
     return matches[len(matches) // 2]                  # median-priced representative
 
@@ -188,6 +234,9 @@ def _salt_lookup(conn, norm):
 # FULL composition is well-covered by generics. Maps brand token -> exact catalog
 # salt. PRECISION RULE: only brands whose entire composition exists in the catalog
 # (so NOT Saridon — its propyphenazone is absent; aliasing it would be a wrong drug).
+# Each entry is verified by check_coverage.py's probe: the brand's own SKU is
+# ABSENT from the catalog, but its single-salt composition IS present (so the
+# generic equivalent can be priced). NOT Saridon — its propyphenazone is absent.
 _BRAND_ALIASES = {
     "crocin": "paracetamol",
     "dolo": "paracetamol",
@@ -196,6 +245,8 @@ _BRAND_ALIASES = {
     "shelcal": "calcium+vitamin d3",
     "hcqs": "hydroxychloroquine",   # Ipca brand; also covers the OCR garble below
     "hqs": "hydroxychloroquine",    # common Apple-Vision misread of HCQS (no real "HQS" SKU)
+    "doxozest": "doxorubicin",      # real pharm_4 miss (oncology injectable)
+    "disprin": "aspirin",
 }
 _GLUED_STRENGTH = re.compile(r"^(\d+(?:\.\d+)?)(mg|mcg|gm|g|ml|iu)$")
 

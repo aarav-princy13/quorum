@@ -153,9 +153,16 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
    not worth it for v1). The Analyzing screen still has a `[ocrbox]` debug dump (debug builds only) for tuning.
 5. **Widen the OCR benchmark** test set (more real receipts) → do the **fair Unlimited-OCR retry** (its 62
    was a detection-mode/community-GGUF artifact, not capability).
-6. **Backend coverage:** add more brand aliases as real receipts surface them; consider a **typo-tolerant
-   fuzzy** block to catch the HCQS↔HQS class generically (precision/perf tradeoff — currently handled by
-   alias). Compositions genuinely absent from the dataset (Saridon's propyphenazone) need richer data, not code.
+6. **Backend coverage — widened (2026-06-27):** ran a coverage probe (NEW **`python3 code/check_coverage.py`**,
+   reports match-rate + misses over `ocr_bench/gold/`; real items now 17/24, the rest are generic
+   descriptions / homeopathy / packaging / Saridon). Finding: the open catalog is already broad — most
+   common brands have SKUs. Added verified absent-but-composition-present aliases: **doxozest→doxorubicin**
+   (real pharm_4 miss), **disprin→aspirin** (limcee→vitamin c was REJECTED — only injectable 500mg under
+   that salt). **Route-safety fix:** `_composition_match` is now **form-aware** — an alias/generic lookup
+   returns a SAME-ROUTE representative (never an injectable for an oral tablet); formless queries prefer oral
+   and never fall back to a parenteral. Guarded by a ROUTE_OK block in `test_matching.py`. Still open: generic
+   typo-tolerant fuzzy for OCR garbles that DELETE internal chars (HQS↔HCQS — needs a brand/trigram index,
+   not prefix blocking; currently per-brand alias). Saridon's propyphenazone is genuinely absent (data, not code).
 7. **Safety — gazette reconciliation DONE (2026-06-27):** H1/X salt lists reconciled vs the official
    Drugs & Cosmetics Rules Schedule X (16) + H1 (46 + oxytocin/tapentadol). Fixed under-flags
    (phenobarbitone/phenytoin→H, clofazimine/oxytocin/tapentadol→H1, levofloxacin→H1), over-flags
@@ -170,7 +177,8 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
 10. **App store path:** Android signing + test device; revisit iOS bundle id if the free Apple ID collides.
 
 ## 10. Known-good invariants (don't regress)
-- `python3 code/test_matching.py` → **0 failures** (precision guard, incl. Saridon must-not-match).
+- `python3 code/test_matching.py` → **0 failures** (precision guard: Saridon must-not-match + ROUTE_OK
+  oral/injectable never cross). `python3 code/check_coverage.py` reports real-receipt match-rate (informational).
 - `python3 code/test_pipeline.py` → **0 failures** (savings never overstate: line = per_unit × qty, not
   per-pack × qty; unknown qty → one pack).
 - `python3 code/test_safety.py` → **0 failures** (H/H1/X gazette reconciliation incl. phenobarbital-not-X
