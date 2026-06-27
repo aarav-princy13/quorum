@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_badge.dart';
@@ -57,7 +58,7 @@ class ItemDetailScreen extends StatelessWidget {
                   _AlternativesSection(item: item),
                   if (pharmacies.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    const SectionLabel('Where to buy'),
+                    SectionLabel(context.s.whereToBuy),
                     const SizedBox(height: 8),
                     NearbyCard(
                       pharmacies: pharmacies,
@@ -99,7 +100,7 @@ class _CurrentPriceBlock extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "What you're paying",
+            context.s.whatYourePaying,
             style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
           ),
           const SizedBox(height: 6),
@@ -118,7 +119,7 @@ class _CurrentPriceBlock extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '${rupees(matched.unitPrice)}/unit',
+                context.s.perUnit(rupees(matched.unitPrice)),
                 style: TextStyle(
                   fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                   fontSize: 22,
@@ -131,8 +132,7 @@ class _CurrentPriceBlock extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'MRP ${rupees(matched.mrpInr!)}'
-                    '${matched.pack.isNotEmpty ? ' · ${matched.pack}' : ''}',
+                    context.s.mrpPack(rupees(matched.mrpInr!), matched.pack),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -150,8 +150,7 @@ class _CurrentPriceBlock extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Switching could save ${rupees(item.savingsInrLine)} '
-                    'on ${item.qty} unit${item.qty == 1 ? '' : 's'}',
+                    context.s.switchingSaves(rupees(item.savingsInrLine), item.qty),
                     style: TextStyle(
                         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.successText),
                   ),
@@ -180,10 +179,10 @@ class _AlternativesSection extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionLabel('Cheaper alternatives'),
+          SectionLabel(context.s.cheaperAlternativesPlain),
           const SizedBox(height: 8),
           Text(
-            'No cheaper equivalent found in the catalogue.',
+            context.s.noCheaper,
             style: TextStyle(
               fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
               fontSize: 13,
@@ -197,13 +196,13 @@ class _AlternativesSection extends StatelessWidget {
 
     // The backend caps the list (25); n_alternatives is the true count.
     final hiddenNote = item.nAlternatives > alts.length
-        ? 'Showing the ${alts.length} cheapest of ${item.nAlternatives}'
+        ? context.s.showingCheapest(alts.length, item.nAlternatives)
         : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SectionLabel('Cheaper alternatives (${item.nAlternatives})'),
+        SectionLabel(context.s.cheaperAlternatives(item.nAlternatives)),
         const SizedBox(height: 2),
         for (final alt in alts) _AlternativeRow(alt: alt, basePrice: base),
         if (hiddenNote != null) ...[
@@ -258,10 +257,10 @@ class _AlternativeRow extends StatelessWidget {
                   runSpacing: 6,
                   children: [
                     if (alt.isAuthoritative)
-                      const AppBadge('Jan Aushadhi',
+                      AppBadge(context.s.janAushadhi,
                           tone: BadgeTone.success, icon: Icons.verified_outlined)
                     else if (alt.isGeneric)
-                      const AppBadge('Generic', tone: BadgeTone.neutral),
+                      AppBadge(context.s.generic, tone: BadgeTone.neutral),
                     if (alt.pack.isNotEmpty)
                       AppBadge(alt.pack, tone: BadgeTone.neutral),
                   ],
@@ -274,7 +273,7 @@ class _AlternativeRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${rupees(alt.unitPrice)}/unit',
+                context.s.perUnit(rupees(alt.unitPrice)),
                 style: TextStyle(
                   fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                   fontSize: 14,
@@ -285,7 +284,7 @@ class _AlternativeRow extends StatelessWidget {
               if (pct != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'save $pct%',
+                  context.s.savePct(pct),
                   style: TextStyle(
                       fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.successText),
                 ),

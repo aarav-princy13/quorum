@@ -3,12 +3,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../data/sample_result.dart';
+import '../l10n/strings.dart';
 import '../services/ocr/ocr_engine.dart';
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 import 'analyzing_screen.dart';
 import 'results_screen.dart';
 import 'settings_screen.dart';
-import '../theme/fonts.dart';
 
 /// Home screen (DESIGN.md): camera + "Scan receipt" (primary), gallery fallback,
 /// and the privacy line. The photo is OCR'd on-device; only text is ever used.
@@ -18,11 +19,15 @@ class CaptureScreen extends StatelessWidget {
     required this.ocr,
     this.onToggleTheme,
     this.themeLabel,
+    this.hindi = false,
+    this.onSetHindi,
   });
 
   final OcrEngine ocr;
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
+  final bool hindi;
+  final ValueChanged<bool>? onSetHindi;
 
   Future<void> _capture(BuildContext context, ImageSource source) async {
     final picker = ImagePicker();
@@ -32,7 +37,7 @@ class CaptureScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ShadToaster.maybeOf(context)?.show(
-          ShadToast.destructive(description: Text('Could not open camera/gallery: $e')),
+          ShadToast.destructive(description: Text(context.s.cameraError(e))),
         );
       }
       return;
@@ -49,7 +54,7 @@ class CaptureScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => ResultsScreen(
           data: sampleResponse(),
-          vendor: 'sample',
+          vendor: context.s.vendorSample,
           onScanAnother: (ctx) => Navigator.of(ctx).maybePop(),
         ),
       ),
@@ -71,7 +76,7 @@ class CaptureScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Brand → Generic',
+                      context.s.appTitle,
                       style: TextStyle(
                         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                         fontSize: 17,
@@ -88,6 +93,8 @@ class CaptureScreen extends StatelessWidget {
                         builder: (_) => SettingsScreen(
                           onToggleTheme: onToggleTheme,
                           themeLabel: themeLabel,
+                          hindi: hindi,
+                          onSetHindi: onSetHindi,
                         ),
                       ),
                     ),
@@ -111,7 +118,7 @@ class CaptureScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 22),
                     Text(
-                      'Scan a pharmacy receipt',
+                      context.s.captureHeadline,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
@@ -123,8 +130,7 @@ class CaptureScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'See cheaper generics, official Jan Aushadhi prices, '
-                      'and prescription-safety flags.',
+                      context.s.captureSubtitle,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
@@ -140,14 +146,14 @@ class CaptureScreen extends StatelessWidget {
                 width: double.infinity,
                 onPressed: () => _capture(context, ImageSource.camera),
                 leading: const Icon(Icons.photo_camera_outlined, size: 18),
-                child: const Text('Scan receipt'),
+                child: Text(context.s.scanReceipt),
               ),
               const SizedBox(height: 10),
               ShadButton.outline(
                 width: double.infinity,
                 onPressed: () => _capture(context, ImageSource.gallery),
                 leading: const Icon(Icons.photo_library_outlined, size: 18),
-                child: const Text('Choose from gallery'),
+                child: Text(context.s.chooseFromGallery),
               ),
               const SizedBox(height: 16),
               Row(
@@ -157,8 +163,7 @@ class CaptureScreen extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      'Your photo is read on your device and never uploaded — '
-                      'only the text is used.',
+                      context.s.privacyShort,
                       style: TextStyle(
                         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                         fontSize: 12,
@@ -173,7 +178,7 @@ class CaptureScreen extends StatelessWidget {
               Center(
                 child: ShadButton.link(
                   onPressed: () => _openSample(context),
-                  child: const Text('View sample results'),
+                  child: Text(context.s.viewSample),
                 ),
               ),
             ],

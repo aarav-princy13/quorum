@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import '../theme/fonts.dart';
@@ -58,7 +59,7 @@ class SafetyCallout extends StatelessWidget {
                 GestureDetector(
                   onTap: () {},
                   child: Text(
-                    'I have a prescription  →',
+                    context.s.iHavePrescription,
                     style: TextStyle(
                       fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 12,

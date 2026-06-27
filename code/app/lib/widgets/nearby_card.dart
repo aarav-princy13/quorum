@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../l10n/strings.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
-import 'pharmacy_row.dart';
 import '../theme/fonts.dart';
+import 'pharmacy_row.dart';
 
 /// Compact "nearby pharmacies" card (DESIGN.md group card): shows the first few,
 /// then a "See all" link into the full Nearby screen. Shared by Results and Item
@@ -15,13 +16,15 @@ class NearbyCard extends StatelessWidget {
     required this.pharmacies,
     this.onSeeAll,
     this.maxInline = 3,
-    this.title = 'Nearby pharmacies',
+    this.title,
   });
 
   final List<Pharmacy> pharmacies;
   final VoidCallback? onSeeAll;
   final int maxInline;
-  final String title;
+
+  /// Defaults to the localized "Nearby pharmacies" when null.
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +47,7 @@ class NearbyCard extends StatelessWidget {
               Icon(Icons.location_on_outlined, size: 16, color: c.textSecondary),
               const SizedBox(width: 6),
               Text(
-                title,
+                title ?? context.s.nearbyPharmacies,
                 style: TextStyle(
                     fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 15,
@@ -61,7 +64,7 @@ class NearbyCard extends StatelessWidget {
               child: ShadButton.link(
                 padding: EdgeInsets.zero,
                 onPressed: onSeeAll,
-                child: Text('See all ${pharmacies.length}'),
+                child: Text(context.s.seeAll(pharmacies.length)),
               ),
             ),
         ],

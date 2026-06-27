@@ -132,9 +132,15 @@ Neutral shadcn surfaces + one indigo accent; color = meaning (green savings / am
 Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card-slop. Implemented in §6.
 
 ## 9. ⭐ NEXT — what to work on (prioritized; nothing started)
-1. **Product screens — DONE** (Item detail, Nearby [list + OSM **map**], Settings; see §6). Still
-   open: wire **Hindi/Devanagari fallback** (font bundled; fallback not yet applied through shadcn's
-   single-family text theme — needs `fontFamilyFallback` threaded through, not just `fontFamily: 'Geist'`).
+1. **Product screens — DONE** (Item detail, Nearby [list + OSM **map**], Settings; see §6).
+   **Hindi/Devanagari — DONE:** (a) font fallback wired — `AppFonts` (`theme/fonts.dart`) = Geist +
+   NotoSansDevanagari; every TextStyle sets `fontFamilyFallback`, and `ShadTextTheme(...).apply(fontFamilyFallback:)`
+   covers shadcn component text. (b) localization: `S` strings class (en/hi) + `Lang` InheritedWidget
+   (`l10n/strings.dart`), accessed via `context.s`; `Lang` sits above the Navigator via `ShadApp.builder`
+   so pushed routes see it. Language switch lives in Settings (English/हिन्दी), held in the app shell like
+   the theme. ALL screen chrome translated. **NOT translated (data/known gaps):** backend safety
+   label/message (needs backend i18n), theme-mode labels (Auto/Light/Dark), catalogue drug/pharmacy names.
+   Language is in-memory (resets on restart) like the theme — persistence is a follow-up.
 2. **Location — DONE (GPS + address fallback):** `geolocator` + `geocoding` wired. `LocationService`
    (`lib/services/location/`): `currentLatLon()` (best-effort GPS, never throws/blocks; started during OCR so
    the fix overlaps) + `geocode(address)` (OS geocoder, no API key). Analyzing screen passes `{lat,lon}` to

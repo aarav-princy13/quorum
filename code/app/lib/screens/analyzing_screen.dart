@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../config/api_config.dart';
 import '../data/sample_result.dart';
+import '../l10n/strings.dart';
 import '../services/api/b2g_api.dart';
 import '../services/location/location_service.dart';
 import '../services/ocr/ocr_engine.dart';
@@ -101,7 +102,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         MaterialPageRoute(
           builder: (_) => ResultsScreen(
             data: resp,
-            vendor: 'your receipt',
+            vendor: context.s.vendorYourReceipt,
             onScanAnother: (ctx) => Navigator.of(ctx).maybePop(),
           ),
         ),
@@ -135,7 +136,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Analyzing',
+                    context.s.analyzing,
                     style: TextStyle(
                       fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 17,
@@ -158,12 +159,12 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   Widget _body(AppPalette c) {
     switch (_phase) {
       case _Phase.reading:
-        return const _LoadingState(label: 'Reading your receipt…');
+        return _LoadingState(label: context.s.reading);
       case _Phase.matching:
-        return const _LoadingState(label: 'Finding cheaper generics…');
+        return _LoadingState(label: context.s.matching);
       case _Phase.error:
         return _ErrorState(
-          message: _error ?? 'Something went wrong',
+          message: _error ?? context.s.somethingWrong,
           hasText: _result != null && !_result!.isEmpty,
           onShowText: () => setState(() => _phase = _Phase.recognized),
           onRetry: () => Navigator.of(context).maybePop(),
@@ -196,7 +197,7 @@ class _LoadingState extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            'The photo is read on your device and never uploaded.',
+            context.s.onDeviceNote,
             textAlign: TextAlign.center,
             style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, height: 1.4, color: c.textMuted),
           ),
@@ -228,7 +229,7 @@ class _ErrorState extends StatelessWidget {
         Icon(Icons.error_outline, size: 28, color: c.dangerText),
         const SizedBox(height: 14),
         Text(
-          "Couldn't finish",
+          context.s.couldntFinish,
           style: TextStyle(
               fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, fontWeight: FontWeight.w500, color: c.textPrimary),
         ),
@@ -245,10 +246,10 @@ class _ErrorState extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ShadButton.outline(onPressed: onRetry, child: const Text('Try another photo')),
+            ShadButton.outline(onPressed: onRetry, child: Text(context.s.tryAnotherPhoto)),
             if (hasText) ...[
               const SizedBox(width: 12),
-              ShadButton.ghost(onPressed: onShowText, child: const Text('Show recognized text')),
+              ShadButton.ghost(onPressed: onShowText, child: Text(context.s.showRecognizedText)),
             ],
           ],
         ),
@@ -273,30 +274,29 @@ class _RecognizedState extends StatelessWidget {
         children: [
           Icon(Icons.search_off, size: 28, color: c.textMuted),
           const SizedBox(height: 14),
-          Text('No text found',
+          Text(context.s.noTextFound,
               style: TextStyle(
                   fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, fontWeight: FontWeight.w500, color: c.textPrimary)),
           const SizedBox(height: 6),
-          Text('Try a clearer, well-lit photo of the itemised section.',
+          Text(context.s.noTextHint,
               textAlign: TextAlign.center,
               style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted)),
           const SizedBox(height: 18),
           ShadButton.outline(
-              onPressed: () => Navigator.of(context).maybePop(), child: const Text('Scan another')),
+              onPressed: () => Navigator.of(context).maybePop(), child: Text(context.s.scanAnother)),
         ],
       );
     }
 
     final note = ApiConfig.isConfigured
-        ? 'Read on-device. Couldn\'t form line items to match — try a clearer photo.'
-        : 'Read on-device. Connect the price service (set B2G_API_URL/KEY/SECRET) to match '
-            'these to cheaper generics + safety flags.';
+        ? context.s.noTextHint
+        : context.s.connectServiceHint;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Read ${result.lines.length} lines on-device · $ms ms',
+          context.s.linesReadOnDevice(result.lines.length, ms),
           style: TextStyle(
               fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, fontWeight: FontWeight.w600, color: c.textSecondary),
         ),
@@ -340,7 +340,7 @@ class _RecognizedState extends StatelessWidget {
             Expanded(
               child: ShadButton.outline(
                 onPressed: () => Navigator.of(context).maybePop(),
-                child: const Text('Scan another'),
+                child: Text(context.s.scanAnother),
               ),
             ),
             const SizedBox(width: 12),
@@ -350,12 +350,12 @@ class _RecognizedState extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => ResultsScreen(
                       data: sampleResponse(),
-                      vendor: 'sample',
+                      vendor: context.s.vendorSample,
                       onScanAnother: (ctx) => Navigator.of(ctx).maybePop(),
                     ),
                   ),
                 ),
-                child: const Text('Sample results'),
+                child: Text(context.s.sampleResults),
               ),
             ),
           ],

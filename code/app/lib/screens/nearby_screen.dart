@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/strings.dart';
 import '../models/analysis.dart';
 import '../services/api/b2g_api.dart';
 import '../services/location/location_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 import '../widgets/app_badge.dart';
 import '../widgets/pharmacy_map.dart';
 import '../widgets/pharmacy_row.dart';
 import '../widgets/screen_header.dart';
-import '../theme/fonts.dart';
 
 /// Outcome of an address lookup: whether the address resolved, the resolved
 /// point (for map centring), and the pharmacies near it.
@@ -100,7 +101,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       if (!res.addressFound) {
         setState(() {
           _loading = false;
-          _error = "Couldn't find that address. Try adding a city or postcode.";
+          _error = context.s.addressNotFound;
         });
         return;
       }
@@ -114,7 +115,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e is ApiException ? e.message : 'Something went wrong. Try again.';
+        _error = e is ApiException ? e.message : context.s.somethingWrong;
       });
     }
   }
@@ -135,10 +136,11 @@ class _NearbyScreenState extends State<NearbyScreen> {
     final janCount = _pharmacies.where((p) => p.isJanAushadhi).length;
     final canMap = ranked.isNotEmpty;
     final showMap = _mapMode && canMap;
+    final s = context.s;
     final subtitle = _searchedLabel != null
-        ? 'Near $_searchedLabel · ${_pharmacies.length} found'
-        : '${_pharmacies.length} found'
-            '${janCount > 0 ? ' · $janCount Jan Aushadhi' : ''}';
+        ? s.nearLabel(_searchedLabel!, _pharmacies.length)
+        : s.foundCount(_pharmacies.length) +
+            (janCount > 0 ? s.janAushadhiCount(janCount) : '');
 
     return ColoredBox(
       color: c.surface0,
@@ -147,7 +149,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ScreenHeader(
-              title: 'Nearby pharmacies',
+              title: s.nearbyPharmacies,
               subtitle: subtitle,
               onBack: () => Navigator.of(context).maybePop(),
               actions: [
@@ -233,9 +235,9 @@ class _ViewToggle extends StatelessWidget {
     }
 
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      btn('List', Icons.view_list_outlined, false),
+      btn(context.s.list, Icons.view_list_outlined, false),
       const SizedBox(width: 4),
-      btn('Map', Icons.map_outlined, true),
+      btn(context.s.map, Icons.map_outlined, true),
     ]);
   }
 }
@@ -348,13 +350,13 @@ class _SelectedCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(children: [
                   if (pharmacy.isJanAushadhi) ...[
-                    const AppBadge('Jan Aushadhi',
+                    AppBadge(context.s.janAushadhi,
                         tone: BadgeTone.success, icon: Icons.verified_outlined),
                     const SizedBox(width: 8),
                   ],
                   if (pharmacy.distanceKm != null)
                     Text(
-                      '${pharmacy.distanceKm!.toStringAsFixed(1)} km away',
+                      context.s.kmAway(pharmacy.distanceKm!.toStringAsFixed(1)),
                       style: TextStyle(
                           fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textMuted),
                     ),
@@ -364,7 +366,7 @@ class _SelectedCard extends StatelessWidget {
                   size: ShadButtonSize.sm,
                   onPressed: onOpenMaps,
                   leading: const Icon(Icons.directions_outlined, size: 16),
-                  child: const Text('Open in Maps'),
+                  child: Text(context.s.openInMaps),
                 ),
               ],
             ),
@@ -400,7 +402,7 @@ class _AddressBar extends StatelessWidget {
           Expanded(
             child: ShadInput(
               controller: controller,
-              placeholder: const Text('Search an address or area'),
+              placeholder: Text(context.s.searchHint),
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => onSearch(),
             ),
@@ -408,7 +410,7 @@ class _AddressBar extends StatelessWidget {
           const SizedBox(width: 8),
           ShadButton(
             onPressed: loading ? null : onSearch,
-            child: const Text('Search'),
+            child: Text(context.s.search),
           ),
         ],
       ),
@@ -435,9 +437,7 @@ class _EmptyHint extends StatelessWidget {
                 size: 36, color: c.textMuted),
             const SizedBox(height: 12),
             Text(
-              searched
-                  ? 'No pharmacies found near there.'
-                  : 'Search an address to find pharmacies nearby.',
+              searched ? context.s.noPharmaciesNear : context.s.searchToFind,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
@@ -449,7 +449,7 @@ class _EmptyHint extends StatelessWidget {
             if (searched) ...[
               const SizedBox(height: 6),
               Text(
-                'Try a nearby landmark or a wider area.',
+                context.s.tryWiderArea,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted),

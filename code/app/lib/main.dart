@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart'; // for ThemeMode; re-exports widgets
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'l10n/strings.dart';
 import 'screens/capture_screen.dart';
 import 'services/ocr/ocr_engine.dart';
 import 'theme/app_theme.dart';
@@ -29,7 +30,10 @@ class BrandToGenericApp extends StatefulWidget {
 
 class _BrandToGenericAppState extends State<BrandToGenericApp> {
   ThemeMode _mode = ThemeMode.system;
+  bool _hi = false; // false = English, true = Hindi
   final OcrEngine _ocr = createOcrEngine();
+
+  void _setHindi(bool hi) => setState(() => _hi = hi);
 
   void _cycleTheme() {
     setState(() {
@@ -56,10 +60,15 @@ class _BrandToGenericAppState extends State<BrandToGenericApp> {
       theme: lightTheme,
       darkTheme: darkTheme,
       scrollBehavior: const AppScrollBehavior(),
+      // Lang sits ABOVE the Navigator (via builder) so every pushed route can
+      // read `context.s`, and switching language rebuilds the whole tree.
+      builder: (context, child) => Lang(hi: _hi, child: child ?? const SizedBox()),
       home: CaptureScreen(
         ocr: _ocr,
         onToggleTheme: _cycleTheme,
         themeLabel: _themeLabel,
+        hindi: _hi,
+        onSetHindi: _setHindi,
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../l10n/strings.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 import '../widgets/app_badge.dart';
 import '../widgets/disclaimer.dart';
 import '../widgets/money.dart';
@@ -12,7 +14,6 @@ import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
 import 'item_detail_screen.dart';
 import 'nearby_screen.dart';
-import '../theme/fonts.dart';
 
 /// How many pharmacies the inline card shows before deferring to the Nearby screen.
 const _kInlinePharmacies = 3;
@@ -71,9 +72,9 @@ class ResultsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ScreenHeader(
-              title: 'Scan results',
-              subtitle: '${result.summary.nItems} medicines'
-                  '${vendor != null ? ' · $vendor' : ''}',
+              title: context.s.scanResults,
+              subtitle: context.s.medicinesCount(result.summary.nItems) +
+                  (vendor != null ? ' · $vendor' : ''),
               actions: [
                 if (onToggleTheme != null)
                   ShadButton.ghost(
@@ -89,14 +90,14 @@ class ResultsScreen extends StatelessWidget {
                 children: [
                   _SummaryStrip(summary: result.summary),
                   const SizedBox(height: 22),
-                  const SectionLabel('Your medicines'),
+                  SectionLabel(context.s.yourMedicines),
                   const SizedBox(height: 2),
                   for (final item in found)
                     _ItemRow(item: item, onTap: () => _openItem(context, item)),
                   if (notFound.isNotEmpty) _NotFoundSection(items: notFound),
                   if (safetyItems.isNotEmpty) ...[
                     const SizedBox(height: 26),
-                    const SectionLabel('Safety'),
+                    SectionLabel(context.s.safety),
                     const SizedBox(height: 10),
                     for (final item in safetyItems) ...[
                       SafetyCallout(item: item),
@@ -115,13 +116,13 @@ class ResultsScreen extends StatelessWidget {
                       width: double.infinity,
                       onPressed: () => _openNearby(context),
                       leading: const Icon(Icons.location_on_outlined, size: 18),
-                      child: const Text('Find nearby pharmacies'),
+                      child: Text(context.s.findNearby),
                     ),
                   const SizedBox(height: 24),
                   ShadButton(
                     width: double.infinity,
                     onPressed: () => onScanAnother?.call(context),
-                    child: const Text('Scan another'),
+                    child: Text(context.s.scanAnother),
                   ),
                   const SizedBox(height: 16),
                   const Disclaimer(),
@@ -143,9 +144,6 @@ class _SummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final rxLine = summary.nRxFlagged > 0
-        ? ' · ${summary.nRxFlagged} need a prescription'
-        : '';
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
@@ -174,7 +172,7 @@ class _SummaryStrip extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    'you could save',
+                    context.s.youCouldSave,
                     style: TextStyle(
                         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, color: c.textSecondary),
                   ),
@@ -184,7 +182,8 @@ class _SummaryStrip extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'across ${summary.nFound} of ${summary.nItems} medicines$rxLine',
+            context.s.savingsAcross(
+                summary.nFound, summary.nItems, summary.nRxFlagged),
             style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
           ),
         ],
@@ -206,9 +205,9 @@ class _ItemRow extends StatelessWidget {
 
     Widget? badge;
     if (item.safety.schedule == 'X') {
-      badge = const AppBadge('Schedule X', tone: BadgeTone.danger);
+      badge = AppBadge(context.s.scheduleX, tone: BadgeTone.danger);
     } else if (item.safety.requiresRxConfirmation) {
-      badge = const AppBadge('Rx only', tone: BadgeTone.warning);
+      badge = AppBadge(context.s.rxOnly, tone: BadgeTone.warning);
     }
 
     return GestureDetector(
@@ -251,7 +250,7 @@ class _ItemRow extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    AppBadge('save ${item.savingsPct.round()}%', tone: BadgeTone.success),
+                    AppBadge(context.s.savePct(item.savingsPct.round()), tone: BadgeTone.success),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -266,15 +265,18 @@ class _ItemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${rupees(item.cheapestAlternative!.unitPrice)}/unit '
-                  'vs ${rupees(m.unitPrice)} · save '
-                  '${rupees(item.savingsInrLine)} on ${item.qty}',
+                  context.s.savingsLine(
+                    rupees(item.cheapestAlternative!.unitPrice),
+                    rupees(m.unitPrice),
+                    rupees(item.savingsInrLine),
+                    item.qty,
+                  ),
                   style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted),
                 ),
                 if (item.cheapestAuthoritative != null) ...[
                   const SizedBox(height: 8),
                   AppBadge(
-                    'Jan Aushadhi · ${rupees(item.cheapestAuthoritative!.unitPrice)}/unit',
+                    '${context.s.janAushadhi} · ${context.s.perUnit(rupees(item.cheapestAuthoritative!.unitPrice))}',
                     tone: BadgeTone.success,
                     icon: Icons.verified_outlined,
                   ),
@@ -320,7 +322,7 @@ class _NotFoundSectionState extends State<_NotFoundSection> {
               children: [
                 Expanded(
                   child: Text(
-                    "Couldn't match $n ${n == 1 ? 'line' : 'lines'}",
+                    context.s.couldntMatch(n),
                     style: TextStyle(
                       fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 13,
@@ -352,7 +354,7 @@ class _NotFoundSectionState extends State<_NotFoundSection> {
           Padding(
             padding: const EdgeInsets.only(top: 10),
             child: Text(
-              "Receipt header/details or items not in the catalogue — check manually.",
+              context.s.couldntMatchHint,
               style: TextStyle(
                   fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 11, height: 1.4, color: c.textMuted),
             ),

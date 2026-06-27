@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/strings.dart';
 import '../theme/app_theme.dart';
 import '../theme/fonts.dart';
 
@@ -11,8 +12,7 @@ class Disclaimer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Not medical advice. Prices are estimates from public catalogues — confirm with '
-      'your pharmacist. Substituting a generic is a decision for you and your doctor.',
+      context.s.disclaimer,
       style: TextStyle(
         fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
         fontSize: 11,

@@ -9,13 +9,14 @@ import 'package:brand_to_generic/models/analysis.dart';
 import 'package:brand_to_generic/screens/item_detail_screen.dart';
 import 'package:brand_to_generic/screens/nearby_screen.dart';
 import 'package:brand_to_generic/screens/settings_screen.dart';
+import 'package:brand_to_generic/l10n/strings.dart';
 import 'package:brand_to_generic/theme/app_theme.dart';
 import 'package:brand_to_generic/widgets/pharmacy_map.dart';
 
-Widget _host(Widget child) => ShadApp(
+Widget _host(Widget child, {bool hi = false}) => ShadApp(
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
-      home: child,
+      home: Lang(hi: hi, child: child),
     );
 
 void main() {
@@ -132,17 +133,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('settings renders its sections and theme control', (tester) async {
+  testWidgets('settings renders sections + a working language selector', (tester) async {
+    bool? picked;
     await tester.pumpWidget(_host(
-      SettingsScreen(onToggleTheme: () {}, themeLabel: 'Auto'),
+      SettingsScreen(
+        onToggleTheme: () {},
+        themeLabel: 'Auto',
+        onSetHindi: (v) => picked = v,
+      ),
     ));
     await tester.pumpAndSettle();
 
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Theme'), findsOneWidget);
-    expect(find.text('Auto'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
     expect(find.text('हिन्दी'), findsOneWidget);
-    expect(find.text('Coming soon'), findsOneWidget);
+
+    await tester.tap(find.text('हिन्दी'));
+    expect(picked, isTrue); // tapping switches language via the callback
+  });
+
+  testWidgets('settings renders in Hindi when the locale is Hindi', (tester) async {
+    await tester.pumpWidget(_host(
+      const SettingsScreen(),
+      hi: true,
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('सेटिंग्स'), findsOneWidget); // "Settings" in Hindi
     expect(tester.takeException(), isNull);
   });
 }

@@ -1,23 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import '../l10n/strings.dart';
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
-import '../theme/fonts.dart';
 
-/// Settings (DESIGN.md #6): appearance, language (Hindi later), privacy, about.
-/// Theme is owned by the app shell and threaded in via [onToggleTheme] /
-/// [themeLabel] so this screen stays stateless.
+/// Settings (DESIGN.md #6): appearance, language, privacy, about. Theme + language
+/// are owned by the app shell and threaded in so this screen stays stateless.
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, this.onToggleTheme, this.themeLabel});
+  const SettingsScreen({
+    super.key,
+    this.onToggleTheme,
+    this.themeLabel,
+    this.hindi = false,
+    this.onSetHindi,
+  });
 
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
+  final bool hindi;
+  final ValueChanged<bool>? onSetHindi;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final s = context.s;
+    Widget langRow(String title, bool isHindi) => _Row(
+          icon: Icons.translate_outlined,
+          title: title,
+          onTap: onSetHindi == null ? null : () => onSetHindi!(isHindi),
+          trailing: hindi == isHindi
+              ? Icon(Icons.check, size: 18, color: c.primary)
+              : null,
+        );
     return ColoredBox(
       color: c.surface0,
       child: SafeArea(
@@ -25,19 +42,19 @@ class SettingsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ScreenHeader(
-              title: 'Settings',
+              title: s.settings,
               onBack: () => Navigator.of(context).maybePop(),
             ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                 children: [
-                  const SectionLabel('Appearance'),
+                  SectionLabel(s.appearance),
                   const SizedBox(height: 6),
                   _Row(
                     icon: Icons.brightness_6_outlined,
-                    title: 'Theme',
-                    subtitle: 'Light, dark, or follow the system',
+                    title: s.theme,
+                    subtitle: s.themeSubtitle,
                     trailing: onToggleTheme == null
                         ? null
                         : ShadButton.outline(
@@ -47,45 +64,28 @@ class SettingsScreen extends StatelessWidget {
                           ),
                   ),
                   const SizedBox(height: 22),
-                  const SectionLabel('Language'),
+                  SectionLabel(s.language),
                   const SizedBox(height: 6),
-                  _Row(
-                    icon: Icons.translate_outlined,
-                    title: 'English',
-                    trailing: Icon(Icons.check, size: 18, color: c.primary),
-                  ),
-                  _Row(
-                    icon: Icons.translate_outlined,
-                    title: 'हिन्दी',
-                    subtitle: 'Coming soon',
-                    enabled: false,
-                  ),
+                  langRow('English', false),
+                  langRow('हिन्दी', true),
                   const SizedBox(height: 22),
-                  const SectionLabel('Privacy'),
+                  SectionLabel(s.privacy),
                   const SizedBox(height: 6),
-                  _InfoBlock(
-                    icon: Icons.lock_outline,
-                    text:
-                        'Your receipt photo is read on your device and never uploaded. '
-                        'Only the extracted text is sent — over a signed, encrypted '
-                        'connection — to look up prices. Location, if you allow it, is '
-                        'used only to rank nearby pharmacies and is never stored.',
-                  ),
+                  _InfoBlock(icon: Icons.lock_outline, text: s.privacyLong),
                   const SizedBox(height: 22),
-                  const SectionLabel('About'),
+                  SectionLabel(s.about),
                   const SizedBox(height: 6),
                   _Row(
                     icon: Icons.info_outline,
-                    title: 'Brand → Generic',
-                    subtitle: 'Version 0.1.0 (dev)',
+                    title: s.appTitle,
+                    subtitle: s.version,
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Generic equivalents and prescription-safety flags for Indian '
-                    'pharmacy receipts. Prices from the open Indian Medicine Dataset '
-                    'and official Jan Aushadhi catalogue; pharmacies from OpenStreetMap.',
+                    s.aboutBody,
                     style: TextStyle(
-                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                      fontFamily: AppFonts.family,
+                      fontFamilyFallback: AppFonts.fallback,
                       fontSize: 12,
                       height: 1.5,
                       color: c.textMuted,
@@ -107,27 +107,30 @@ class _Row extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.trailing,
-    this.enabled = true,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String? subtitle;
   final Widget? trailing;
-  final bool enabled;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final fg = enabled ? c.textPrimary : c.textMuted;
-    return Container(
+    final fg = c.textPrimary;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
       padding: const EdgeInsets.symmetric(vertical: 13),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: c.border, width: 0.5)),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: enabled ? c.textSecondary : c.textMuted),
+          Icon(icon, size: 18, color: c.textSecondary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -155,6 +158,7 @@ class _Row extends StatelessWidget {
           ),
           if (trailing != null) ...[const SizedBox(width: 12), trailing!],
         ],
+      ),
       ),
     );
   }
