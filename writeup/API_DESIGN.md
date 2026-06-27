@@ -13,8 +13,11 @@
 - `POST /v1/nearby` — body `{location:{lat,lon}}` (required) → `{pharmacies:[...]}`. Backs the
   address-entry flow (geocode an address on-device → query here) when no device GPS is available.
   Same HMAC auth/rate-limit as analyze; signs its own path.
-- Both rank pharmacies within a `NEARBY_MAX_KM` (50 km) radius — a far-away catalogue row is never
-  returned as "nearby" (e.g. a US point yields an empty list against the India-only data).
+- **Pharmacy source: live OpenStreetMap (Overpass), per request** (`b2g/places.py`) — real, current,
+  global pharmacies near the point (≈8 km, closest 8), cached in-process. Falls back to the local
+  `pharmacies` snapshot table (`nearby_pharmacies`, `NEARBY_MAX_KM`=50) only if Overpass errors. The
+  query host is fixed and built from validated numeric coords (SSRF-safe); user coords go to OSM to find
+  nearby (inherent), the receipt image never does. Prototype-grade — production wants a managed Places API.
 - `GET /v1/health` — `{"status":"ok"}`, nothing else.
 - Everything else → 404. POST-only on analyze/nearby, JSON-only.
 

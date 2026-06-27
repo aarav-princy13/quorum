@@ -48,8 +48,11 @@ secrets/         (gitignored) dev API key (keys.json) + self-signed TLS cert
 - **Secure HTTPS API** (`server.py`): TLS, API key + HMAC(SHA256) with per-request nonce, rate-limit,
   strict caps, **rejects chunked bodies** (client must send Content-Length), read-only DB.
   `client_example.py` is the signed-request blueprint (ported to Dart, §6). Routes: `POST /v1/analyze`,
-  **`POST /v1/nearby`** (`{location}`→`{pharmacies}`; backs address search), `GET /v1/health`. Nearby
-  ranks within `NEARBY_MAX_KM`=50 (`nearby_pharmacies(..., max_km=)` in `pipeline.py`).
+  **`POST /v1/nearby`** (`{location}`→`{pharmacies}`; backs address search), `GET /v1/health`. **Pharmacies
+  are now LIVE from OpenStreetMap/Overpass per request** (`b2g/places.py` `osm_nearby`, ≈8km/closest-8,
+  in-proc cached, best-effort) — real/current/global (CVS, Boots, …). Falls back to the static `pharmacies`
+  snapshot table (`nearby_pharmacies(..., max_km=50)`) only on Overpass error. The old `ingest_pharmacies.py`
+  table is now just that offline fallback.
 
 ### Backend changes this session
 1. **Schedule safety fix (DMARDs):** added DMARD/immunosuppressant/biologic salts (hydroxychloroquine,
@@ -138,7 +141,8 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
    `analyze()` → server distance-ranks. **Denied GPS?** Results shows a "Find nearby pharmacies" button →
    Nearby screen has an **address search** box → `LocationService.geocode` → `B2gApi.nearby` →
    **`POST /v1/nearby`** (NEW endpoint, signed; body `{location}` → `{pharmacies}`). Both endpoints filter to
-   `NEARBY_MAX_KM`=50 (a US point → empty, honestly, vs India-only data). iOS
+   `NEARBY_MAX_KM`=50 (the fallback radius; live OSM now returns real pharmacies globally incl. the US —
+   only drug PRICES remain India-only). iOS
    `NSLocationWhenInUseUsageDescription` + Android COARSE/FINE perms added; Settings privacy note covers it.
    **Map view DONE:** Nearby has a **List/Map toggle** (`flutter_map` + OSM tiles, no API key; `latlong2`).
    `lib/widgets/pharmacy_map.dart` drops a pin per pharmacy (Jan Aushadhi = success colour) + an optional
@@ -188,6 +192,7 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
   per-pack × qty; unknown qty → one pack).
 - `python3 code/test_safety.py` → **0 failures** (H/H1/X gazette reconciliation incl. phenobarbital-not-X
   guard + conservative overrides). After editing `b2g/schedule.py`, re-run `recompute_schedule.py`.
+- `python3 code/test_places.py` → **0 failures** (Overpass parsing/ranking/JA-classification, no network).
 - `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser qty + signing +
   screens/map smoke tests; 14 total). Map tests log OSM tile 400s (no network in CI) — harmless, tests pass.
 - `code/app/lib/data/sample_result.dart` IS tracked — the `.gitignore` `data/` rule is now root-anchored

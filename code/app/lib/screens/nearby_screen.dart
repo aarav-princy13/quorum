@@ -448,7 +448,7 @@ class _EmptyHint extends StatelessWidget {
             if (searched) ...[
               const SizedBox(height: 6),
               Text(
-                'Pharmacy coverage is currently limited to India.',
+                'Try a nearby landmark or a wider area.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontFamily: 'Geist', fontSize: 12, color: c.textMuted),

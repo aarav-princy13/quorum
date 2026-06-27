@@ -32,6 +32,7 @@ sys.path.insert(0, str(CODE_DIR))
 ROOT = CODE_DIR.parent
 
 from b2g.pipeline import process_receipt, nearby_pharmacies   # noqa: E402
+from b2g.places import osm_nearby                              # noqa: E402
 from b2g.security import load_keys, verify_request, NonceCache, TokenBucket  # noqa: E402
 
 DB_PATH = os.environ.get("B2G_DB", str(ROOT / "data" / "b2g.db"))
@@ -106,6 +107,17 @@ def validate_nearby(obj):
     if loc is None:
         raise ValueError("location is required")
     return _parse_location(loc)
+
+
+def _nearby(conn, location):
+    """Pharmacies near a (lat, lon). Live OpenStreetMap is the source of truth (real,
+    current, global); on an Overpass error we fall back to the local snapshot table.
+    A successful-but-empty live result is returned as-is (honestly "none nearby")."""
+    lat, lon = location
+    live = osm_nearby(lat, lon, limit=8)
+    if live is not None:
+        return live
+    return nearby_pharmacies(conn, lat=lat, lon=lon, max_km=NEARBY_MAX_KM)   # offline fallback
 
 
 def _ro_conn():
@@ -216,14 +228,10 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if self.path == "/v1/analyze":
                     result = process_receipt(conn, items)
-                    pharmacies = (nearby_pharmacies(conn, lat=location[0], lon=location[1],
-                                                    max_km=NEARBY_MAX_KM)
-                                  if location else [])
+                    pharmacies = _nearby(conn, location) if location else []
                     payload = {"result": result, "pharmacies": pharmacies}
                 else:                                      # /v1/nearby
-                    pharmacies = nearby_pharmacies(conn, lat=location[0], lon=location[1],
-                                                   max_km=NEARBY_MAX_KM)
-                    payload = {"pharmacies": pharmacies}
+                    payload = {"pharmacies": _nearby(conn, location)}
             finally:
                 conn.close()
             self._send(200, payload)

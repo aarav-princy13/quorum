@@ -10,9 +10,11 @@ Run after the base DB exists:
 
 Pure standard library: urllib, json, sqlite3. No third-party deps.
 
-NOTE: OSM pharmacy coverage in India is sparse (many shops are unmapped); this gives
-real-but-incomplete data. Production would use Google Places or the Jan Aushadhi Kendra
-directory for fuller coverage.
+NOTE: as of 2026-06-27 the API queries OpenStreetMap (Overpass) LIVE per request
+(b2g/places.py) — real, current, global pharmacies. This static snapshot is now only
+the OFFLINE FALLBACK used when Overpass is unreachable, so it need not be comprehensive.
+OSM pharmacy coverage in India is sparse (many shops unmapped); production would use a
+managed Places API or the Jan Aushadhi Kendra directory for fuller coverage.
 """
 
 import json
