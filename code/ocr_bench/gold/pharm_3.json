@@ -1,0 +1,11 @@
+{
+  "receipt": "pharm_3",
+  "vendor": "Jepline Pharmacy (sample/template)",
+  "image": "pharm_3.png",
+  "note": "Low-res, watermarked 'Sample Invoice' template + homeopathy/non-drug lines. WEAK test image (small, watermark overlay). Prices not legible.",
+  "corrections": "prices left null (not legible at this resolution).",
+  "items": [
+    {"name": "Belladonna 30", "qty": 4, "price": null},
+    {"name": "1/2 dram plastic", "qty": 1, "price": null}
+  ]
+}

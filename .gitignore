@@ -30,3 +30,8 @@ data/
 # Receipt test images at repo root (internet-sourced, not ours to redistribute).
 # Root-anchored so it does NOT ignore code/ocr_samples/pharm_*.json fixtures.
 /pharm_*
+
+# OCR benchmark — compiled Swift helper + downloaded model weights (regenerable).
+# Source, adapters, and gold/ ARE tracked; the venv is covered by .venv/ above.
+code/ocr_bench/.bin/
+code/ocr_bench/models/

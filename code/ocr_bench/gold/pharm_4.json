@@ -1,0 +1,12 @@
+{
+  "receipt": "pharm_4",
+  "vendor": "Ujala Cygnus Central Hospital (Haldwani)",
+  "image": "pharm_4.webp",
+  "note": "Two stacked receipts — topicals (top) + oncology injectable (bottom). Slightly faded scan.",
+  "corrections": "filled prices from image Mrp column (were null in source fixture): MUPIKEM 140.00, CLOCIP 74.00, DOXOZEST 984.00.",
+  "items": [
+    {"name": "MUPIKEM OINT 5GM", "qty": 1, "price": 140.00},
+    {"name": "CLOCIP DUST POW 75GM", "qty": 1, "price": 74.00},
+    {"name": "DOXOZEST INJ 50MG", "qty": 3, "price": 984.00}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "receipt": "pharm_5",
+  "vendor": "Sant Pharmacy, Sector 11D Chandigarh",
+  "image": "pharm_5.jpeg",
+  "note": "REAL receipt (3744x2594 photo). Rheumatoid-arthritis regimen — DMARDs/steroid/analgesics + supplements. Highest-value real-world test.",
+  "corrections": "PREGEB OD 75MG and FLEXON TAB prices set null — source fixture values (224.00 / 32.20) did not match the image Mrp column on review (PREGEB ~691.50; FLEXON ambiguous). Other prices confirmed against image.",
+  "items": [
+    {"name": "EYEMIST EYE DROP", "qty": 1, "price": 230.63},
+    {"name": "SARIDON TAB", "qty": 20, "price": 51.55},
+    {"name": "FOLITRAX 10MG", "qty": 10, "price": 70.98},
+    {"name": "LEFRA 20MG", "qty": 40, "price": 301.85},
+    {"name": "FOLITRAX 15MG TAB", "qty": 10, "price": 283.47},
+    {"name": "CROCIN 650MG", "qty": 30, "price": 32.13},
+    {"name": "SHELCAL 500MG", "qty": 30, "price": 163.45},
+    {"name": "HCQS 300", "qty": 30, "price": 345.75},
+    {"name": "PREGEB OD 75MG", "qty": 40, "price": null},
+    {"name": "EVION 400 MG", "qty": 40, "price": 89.57},
+    {"name": "WYSOLONE 5MG", "qty": 30, "price": 10.82},
+    {"name": "FLEXON TAB", "qty": 15, "price": null}
+  ]
+}
