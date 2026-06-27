@@ -24,8 +24,9 @@ secrets/
 output/*
 !output/.gitkeep
 
-# Downloaded source data + built DB (large, regenerable)
-data/
+# Downloaded source data + built DB (large, regenerable).
+# Root-anchored so it does NOT ignore app source under code/app/lib/data/.
+/data/
 
 # Receipt test images at repo root (internet-sourced, not ours to redistribute).
 # Root-anchored so it does NOT ignore code/ocr_samples/pharm_*.json fixtures.

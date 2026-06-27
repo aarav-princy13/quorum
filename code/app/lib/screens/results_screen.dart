@@ -4,15 +4,22 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_badge.dart';
+import '../widgets/disclaimer.dart';
+import '../widgets/money.dart';
+import '../widgets/nearby_card.dart';
+import '../widgets/safety_callout.dart';
+import '../widgets/screen_header.dart';
+import '../widgets/section_label.dart';
+import 'item_detail_screen.dart';
+import 'nearby_screen.dart';
 
-String _rupees(num v) {
-  final s = v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(2);
-  return '₹$s';
-}
+/// How many pharmacies the inline card shows before deferring to the Nearby screen.
+const _kInlinePharmacies = 3;
 
 /// The centerpiece screen (DESIGN.md): savings summary -> bordered medicine rows
 /// (composition, savings, Rx/safety badges, cheaper option + Jan Aushadhi anchor)
 /// -> safety callouts -> nearby pharmacies -> Scan another -> disclaimer.
+/// Found rows tap through to Item detail; the nearby card opens the full list.
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({
     super.key,
@@ -28,6 +35,22 @@ class ResultsScreen extends StatelessWidget {
   final void Function(BuildContext context)? onScanAnother;
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
+
+  void _openItem(BuildContext context, ResultItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ItemDetailScreen(item: item, pharmacies: data.pharmacies),
+      ),
+    );
+  }
+
+  void _openNearby(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NearbyScreen(pharmacies: data.pharmacies),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +69,18 @@ class ResultsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Header(
+            ScreenHeader(
               title: 'Scan results',
               subtitle: '${result.summary.nItems} medicines'
                   '${vendor != null ? ' · $vendor' : ''}',
-              themeLabel: themeLabel,
-              onToggleTheme: onToggleTheme,
+              actions: [
+                if (onToggleTheme != null)
+                  ShadButton.ghost(
+                    size: ShadButtonSize.sm,
+                    onPressed: onToggleTheme,
+                    child: Text(themeLabel ?? 'Theme'),
+                  ),
+              ],
             ),
             Expanded(
               child: ListView(
@@ -59,21 +88,26 @@ class ResultsScreen extends StatelessWidget {
                 children: [
                   _SummaryStrip(summary: result.summary),
                   const SizedBox(height: 22),
-                  _SectionLabel('Your medicines'),
+                  const SectionLabel('Your medicines'),
                   const SizedBox(height: 2),
-                  for (final item in found) _ItemRow(item: item),
+                  for (final item in found)
+                    _ItemRow(item: item, onTap: () => _openItem(context, item)),
                   if (notFound.isNotEmpty) _NotFoundSection(items: notFound),
                   if (safetyItems.isNotEmpty) ...[
                     const SizedBox(height: 26),
-                    _SectionLabel('Safety'),
+                    const SectionLabel('Safety'),
                     const SizedBox(height: 10),
                     for (final item in safetyItems) ...[
-                      _SafetyCallout(item: item),
+                      SafetyCallout(item: item),
                       const SizedBox(height: 10),
                     ],
                   ],
                   const SizedBox(height: 22),
-                  _NearbyCard(pharmacies: data.pharmacies),
+                  NearbyCard(
+                    pharmacies: data.pharmacies,
+                    maxInline: _kInlinePharmacies,
+                    onSeeAll: () => _openNearby(context),
+                  ),
                   const SizedBox(height: 24),
                   ShadButton(
                     width: double.infinity,
@@ -81,66 +115,12 @@ class ResultsScreen extends StatelessWidget {
                     child: const Text('Scan another'),
                   ),
                   const SizedBox(height: 16),
-                  const _Disclaimer(),
+                  const Disclaimer(),
                 ],
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.title,
-    required this.subtitle,
-    this.themeLabel,
-    this.onToggleTheme,
-  });
-
-  final String title;
-  final String subtitle;
-  final String? themeLabel;
-  final VoidCallback? onToggleTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: 'Geist',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.17,
-                    color: c.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
-                ),
-              ],
-            ),
-          ),
-          if (onToggleTheme != null)
-            ShadButton.ghost(
-              size: ShadButtonSize.sm,
-              onPressed: onToggleTheme,
-              child: Text(themeLabel ?? 'Theme'),
-            ),
-        ],
       ),
     );
   }
@@ -171,7 +151,7 @@ class _SummaryStrip extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                _rupees(summary.totalSavingsInr),
+                rupees(summary.totalSavingsInr),
                 style: TextStyle(
                   fontFamily: 'Geist',
                   fontSize: 34,
@@ -204,33 +184,11 @@ class _SummaryStrip extends StatelessWidget {
   }
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 2),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontFamily: 'Geist',
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.1,
-          color: context.colors.textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
 class _ItemRow extends StatelessWidget {
-  const _ItemRow({required this.item});
+  const _ItemRow({required this.item, this.onTap});
 
   final ResultItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -244,252 +202,78 @@ class _ItemRow extends StatelessWidget {
       badge = const AppBadge('Rx only', tone: BadgeTone.warning);
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: c.border, width: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  item.query,
-                  style: TextStyle(
-                    fontFamily: 'Geist',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: c.textPrimary,
-                  ),
-                ),
-              ),
-              if (badge != null) ...[const SizedBox(width: 8), badge],
-            ],
-          ),
-          if (item.found && m != null) ...[
-            const SizedBox(height: 3),
-            Text(
-              [m.salt, m.strength, m.form].where((s) => s.isNotEmpty).join(' · '),
-              style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
-            ),
-            if (item.hasSavings) ...[
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  AppBadge('save ${item.savingsPct.round()}%', tone: BadgeTone.success),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      item.cheapestAlternative!.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${_rupees(item.cheapestAlternative!.unitPrice)}/unit '
-                'vs ${_rupees(m.unitPrice)} · save '
-                '${_rupees(item.savingsInrLine)} on ${item.qty}',
-                style: TextStyle(fontFamily: 'Geist', fontSize: 12, color: c.textMuted),
-              ),
-              if (item.cheapestAuthoritative != null) ...[
-                const SizedBox(height: 8),
-                AppBadge(
-                  'Jan Aushadhi · ${_rupees(item.cheapestAuthoritative!.unitPrice)}/unit',
-                  tone: BadgeTone.success,
-                  icon: Icons.verified_outlined,
-                ),
-              ],
-            ],
-          ] else if (!item.found) ...[
-            const SizedBox(height: 4),
-            Text(
-              "Couldn't identify — check the label manually",
-              style: TextStyle(
-                fontFamily: 'Geist',
-                fontSize: 13,
-                color: c.textMuted,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SafetyCallout extends StatelessWidget {
-  const _SafetyCallout({required this.item});
-
-  final ResultItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final strict = item.safety.isStrict; // Schedule X
-    final fg = strict ? c.dangerText : c.warningText;
-    final bg = strict ? c.dangerBg : c.warningBg;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(strict ? Icons.gpp_maybe_outlined : Icons.shield_outlined,
-              size: 18, color: fg),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: c.border, width: 0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${item.query} — ${item.safety.label}',
-                  style: TextStyle(
-                    fontFamily: 'Geist',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: fg,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  item.safety.message,
-                  style: TextStyle(
-                    fontFamily: 'Geist',
-                    fontSize: 12,
-                    height: 1.4,
-                    color: fg,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {},
+                Expanded(
                   child: Text(
-                    'I have a prescription  →',
+                    item.query,
                     style: TextStyle(
                       fontFamily: 'Geist',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: fg,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: c.textPrimary,
                     ),
                   ),
                 ),
+                if (badge != null) ...[const SizedBox(width: 8), badge],
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right, size: 18, color: c.textMuted),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NearbyCard extends StatelessWidget {
-  const _NearbyCard({required this.pharmacies});
-
-  final List<Pharmacy> pharmacies;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    if (pharmacies.isEmpty) return const SizedBox.shrink();
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface2,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.border, width: 0.5),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, size: 16, color: c.textSecondary),
-              const SizedBox(width: 6),
+            if (m != null) ...[
+              const SizedBox(height: 3),
               Text(
-                'Nearby pharmacies',
-                style: TextStyle(
-                    fontFamily: 'Geist',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: c.textPrimary),
+                [m.salt, m.strength, m.form].where((s) => s.isNotEmpty).join(' · '),
+                style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
               ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          for (final p in pharmacies) _PharmacyRow(pharmacy: p),
-        ],
-      ),
-    );
-  }
-}
-
-class _PharmacyRow extends StatelessWidget {
-  const _PharmacyRow({required this.pharmacy});
-
-  final Pharmacy pharmacy;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pharmacy.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontFamily: 'Geist', fontSize: 14, color: c.textPrimary),
+              if (item.hasSavings) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    AppBadge('save ${item.savingsPct.round()}%', tone: BadgeTone.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.cheapestAlternative!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
+                      ),
+                    ),
+                  ],
                 ),
-                if (pharmacy.isJanAushadhi) ...[
-                  const SizedBox(height: 5),
-                  const AppBadge('Jan Aushadhi',
-                      tone: BadgeTone.success, icon: Icons.verified_outlined),
+                const SizedBox(height: 4),
+                Text(
+                  '${rupees(item.cheapestAlternative!.unitPrice)}/unit '
+                  'vs ${rupees(m.unitPrice)} · save '
+                  '${rupees(item.savingsInrLine)} on ${item.qty}',
+                  style: TextStyle(fontFamily: 'Geist', fontSize: 12, color: c.textMuted),
+                ),
+                if (item.cheapestAuthoritative != null) ...[
+                  const SizedBox(height: 8),
+                  AppBadge(
+                    'Jan Aushadhi · ${rupees(item.cheapestAuthoritative!.unitPrice)}/unit',
+                    tone: BadgeTone.success,
+                    icon: Icons.verified_outlined,
+                  ),
                 ],
               ],
-            ),
-          ),
-          if (pharmacy.distanceKm != null) ...[
-            const SizedBox(width: 12),
-            Text(
-              '${pharmacy.distanceKm!.toStringAsFixed(1)} km',
-              style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
-            ),
+            ],
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Disclaimer extends StatelessWidget {
-  const _Disclaimer();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      'Not medical advice. Prices are estimates from public catalogues — confirm with '
-      'your pharmacist. Substituting a generic is a decision for you and your doctor.',
-      style: TextStyle(
-        fontFamily: 'Geist',
-        fontSize: 11,
-        height: 1.45,
-        color: context.colors.textMuted,
+        ),
       ),
     );
   }

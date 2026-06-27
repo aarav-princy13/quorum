@@ -7,6 +7,7 @@ import '../services/ocr/ocr_engine.dart';
 import '../theme/app_theme.dart';
 import 'analyzing_screen.dart';
 import 'results_screen.dart';
+import 'settings_screen.dart';
 
 /// Home screen (DESIGN.md): camera + "Scan receipt" (primary), gallery fallback,
 /// and the privacy line. The photo is OCR'd on-device; only text is ever used.
@@ -79,12 +80,18 @@ class CaptureScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (onToggleTheme != null)
-                    ShadButton.ghost(
-                      size: ShadButtonSize.sm,
-                      onPressed: onToggleTheme,
-                      child: Text(themeLabel ?? 'Theme'),
+                  ShadButton.ghost(
+                    size: ShadButtonSize.sm,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(
+                          onToggleTheme: onToggleTheme,
+                          themeLabel: themeLabel,
+                        ),
+                      ),
                     ),
+                    child: Icon(Icons.settings_outlined, size: 18, color: c.textSecondary),
+                  ),
                 ],
               ),
               Expanded(

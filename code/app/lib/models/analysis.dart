@@ -63,6 +63,11 @@ class ResultItem {
   final MatchedDrug? matched;
   final AlternativeDrug? cheapestAlternative;
   final AlternativeDrug? cheapestAuthoritative;
+
+  /// Full cheaper-first list (backend caps at 25). Empty when nothing is cheaper.
+  /// `nAlternatives` is the true count over the whole catalogue, which can exceed
+  /// this list's length.
+  final List<AlternativeDrug> alternatives;
   final int nAlternatives;
   final double savingsInrPerUnit;
   final double savingsInrPack;
@@ -77,6 +82,7 @@ class ResultItem {
     required this.matched,
     required this.cheapestAlternative,
     required this.cheapestAuthoritative,
+    required this.alternatives,
     required this.nAlternatives,
     required this.savingsInrPerUnit,
     required this.savingsInrPack,
@@ -102,6 +108,9 @@ class ResultItem {
             ? null
             : AlternativeDrug.fromJson(
                 j['cheapest_authoritative'] as Map<String, dynamic>),
+        alternatives: ((j['alternatives'] as List?) ?? const [])
+            .map((a) => AlternativeDrug.fromJson(a as Map<String, dynamic>))
+            .toList(),
         nAlternatives: _i(j['n_alternatives']),
         savingsInrPerUnit: _d(j['savings_inr_per_unit']),
         savingsInrPack: _d(j['savings_inr_pack']),
