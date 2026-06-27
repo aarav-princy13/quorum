@@ -35,6 +35,12 @@ SHOULD_MATCH = [
     ("Paracetamol 500 mg", "paracetamol", "500mg"),  # generic name -> plain, NOT a combo
     ("MUPIKEM OINT 5GM", "mupirocin", None),         # 5GM is pack size, not a strength
     ("CLOCIP DUST POW 75GM", "clotrimazole", None),  # 75GM pack size on a powder
+    # brand-alias coverage: very common brands with no SKU in the open dataset but
+    # whose full composition is well-covered -> resolved to the generic salt.
+    ("CROCIN 650MG", "paracetamol", "650mg"),        # glued strength + brand alias
+    ("EVION 400 MG", "vitamin e", "400mg"),
+    ("SHELCAL 500MG", "calcium+vitamin d3", None),   # combo strength varies
+    ("HQS 300 N", "hydroxychloroquine", "300mg"),    # OCR garble of HCQS + stray "N"
 ]
 
 # queries that must NEVER resolve to the WRONG drug (None = either miss, or match
@@ -43,6 +49,7 @@ MUST_NOT_MISMATCH = [
     ("Vitamin C Chewable", "vitamin"),   # may match a Vitamin C product, but never Vitamin A/B/D
     ("Xyzqwer 500", None),               # junk -> must be NOT FOUND
     ("random text here", None),          # junk -> must be NOT FOUND
+    ("Saridon Tab", None),               # propyphenazone absent from catalog -> must NOT guess a wrong combo
 ]
 
 

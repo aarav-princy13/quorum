@@ -148,6 +148,28 @@ def _fuzzy_lookup(conn, norm):
     return (best, best_score) if best_score >= FUZZY_THRESHOLD else (None, best_score)
 
 
+def _composition_match(conn, salt, tokens):
+    """Given an exact `salt` and the query `tokens`, return the median-priced row of
+    that salt whose strength the query satisfies, or None. Shared by the generic
+    salt-lookup and the brand-alias lookup."""
+    q_mass, q_other = _strength_sigs(tokens, drop_pack=bool(set(tokens) & _PACK_SIZE_FORMS))
+    if not (q_mass or q_other):
+        return None                                    # need a strength to be safe
+    rows = conn.execute(
+        "SELECT * FROM drugs WHERE salt = ? AND strength_known = 1 "
+        "AND COALESCE(unit_price, mrp_inr) IS NOT NULL LIMIT 2000", (salt,)
+    ).fetchall()
+    matches = []
+    for r in rows:
+        sm, so = _strength_sigs(normalize(r["strength"]).split())
+        if q_mass.issubset(sm) and q_other.issubset(so):
+            matches.append(r)
+    if not matches:
+        return None
+    matches.sort(key=_row_unit_price)
+    return matches[len(matches) // 2]                  # median-priced representative
+
+
 def _salt_lookup(conn, norm):
     """Match a GENERIC name ("Paracetamol 500 mg") by composition, preferring the plain
     single-salt drug over a combo. Returns a representative (median-priced) row or None.
@@ -159,23 +181,54 @@ def _salt_lookup(conn, norm):
     brand = [t for t in tokens if not _is_number(t) and t not in _STOP]
     if not brand:
         return None
-    salt_guess = " ".join(brand)                       # single-salt only (no '+')
-    q_mass, q_other = _strength_sigs(tokens, drop_pack=bool(set(tokens) & _PACK_SIZE_FORMS))
-    if not (q_mass or q_other):
-        return None                                    # need a strength to be safe
-    rows = conn.execute(
-        "SELECT * FROM drugs WHERE salt = ? AND strength_known = 1 "
-        "AND COALESCE(unit_price, mrp_inr) IS NOT NULL LIMIT 2000", (salt_guess,)
-    ).fetchall()
-    matches = []
-    for r in rows:
-        sm, so = _strength_sigs(normalize(r["strength"]).split())
-        if q_mass.issubset(sm) and q_other.issubset(so):
-            matches.append(r)
-    if not matches:
+    return _composition_match(conn, " ".join(brand), tokens)  # single-salt only (no '+')
+
+
+# Very common brands whose exact SKU is missing from the open dataset but whose
+# FULL composition is well-covered by generics. Maps brand token -> exact catalog
+# salt. PRECISION RULE: only brands whose entire composition exists in the catalog
+# (so NOT Saridon — its propyphenazone is absent; aliasing it would be a wrong drug).
+_BRAND_ALIASES = {
+    "crocin": "paracetamol",
+    "dolo": "paracetamol",
+    "calpol": "paracetamol",
+    "evion": "vitamin e",
+    "shelcal": "calcium+vitamin d3",
+    "hcqs": "hydroxychloroquine",   # Ipca brand; also covers the OCR garble below
+    "hqs": "hydroxychloroquine",    # common Apple-Vision misread of HCQS (no real "HQS" SKU)
+}
+_GLUED_STRENGTH = re.compile(r"^(\d+(?:\.\d+)?)(mg|mcg|gm|g|ml|iu)$")
+
+
+def _split_glued(tokens):
+    """Split glued strength tokens from real OCR ("650mg" -> "650", "mg")."""
+    out = []
+    for t in tokens:
+        m = _GLUED_STRENGTH.match(t)
+        out.extend([m.group(1), m.group(2)] if m else [t])
+    return out
+
+
+def _alias_lookup(conn, norm):
+    """Resolve a bare "BRAND <strength>" query for a known brand to its generic salt.
+
+    Fires ONLY when the single non-strength/non-form word is an aliased brand, so a
+    variant like "Crocin Cold" (extra descriptor) never aliases to plain paracetamol.
+    """
+    tokens = _split_glued(norm.split())
+    # drop a leading serial number (receipt "S.No" merged into the line, e.g.
+    # "27 | CROCIN 650MG") — a real strength comes AFTER the brand, never before.
+    while tokens and _is_number(tokens[0]):
+        tokens.pop(0)
+    # The lone meaningful word must be the alias key. Ignore stray single-char
+    # tokens (OCR noise like the "N" in "HQS 300 N").
+    words = [t for t in tokens if len(t) >= 2 and not _is_number(t) and t not in _STOP]
+    if len(words) != 1:
         return None
-    matches.sort(key=_row_unit_price)
-    return matches[len(matches) // 2]                  # median-priced representative
+    salt = _BRAND_ALIASES.get(words[0])
+    if salt is None:
+        return None
+    return _composition_match(conn, salt, tokens)
 
 
 def _lookup_drug(conn, name):
@@ -212,6 +265,10 @@ def _lookup_drug(conn, name):
     ).fetchone()
     if row:
         return row, "prefix"
+
+    row = _alias_lookup(conn, norm)
+    if row:
+        return row, "alias"
 
     row, _score = _fuzzy_lookup(conn, norm)
     return (row, "fuzzy") if row else (None, None)

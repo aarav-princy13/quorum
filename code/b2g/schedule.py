@@ -109,6 +109,13 @@ _SALTS_H = frozenset({
     "vincristine", "vinblastine", "imatinib", "rituximab", "trastuzumab",
     # anticoagulants / other parenterals commonly billed
     "enoxaparin", "heparin", "dalteparin", "filgrastim",
+    # DMARDs / immunosuppressants / biologics — prescription-only specialty drugs.
+    # Real-receipt gap (RA/autoimmune regimens): HCQS, Leflunomide, etc. showed OTC.
+    "hydroxychloroquine", "chloroquine", "leflunomide", "sulfasalazine",
+    "azathioprine", "mycophenolate", "ciclosporin", "cyclosporine", "tacrolimus",
+    "penicillamine", "tofacitinib", "baricitinib", "upadacitinib", "apremilast",
+    "adalimumab", "etanercept", "infliximab", "golimumab", "certolizumab",
+    "tocilizumab", "abatacept", "secukinumab", "ustekinumab",
 })
 
 # Dosage forms that are essentially never sold over the counter — used as a
