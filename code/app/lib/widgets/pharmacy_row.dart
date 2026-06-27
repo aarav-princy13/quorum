@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import 'app_badge.dart';
+import '../theme/fonts.dart';
 
 /// One pharmacy line: name, Jan Aushadhi badge, distance. Shared by the Results
 /// nearby card and the full Nearby screen.
@@ -33,7 +34,7 @@ class PharmacyRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontFamily: 'Geist', fontSize: 14, color: c.textPrimary),
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 14, color: c.textPrimary),
                 ),
                 if (pharmacy.isJanAushadhi) ...[
                   const SizedBox(height: 5),
@@ -47,7 +48,7 @@ class PharmacyRow extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '${pharmacy.distanceKm!.toStringAsFixed(1)} km',
-              style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+              style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textMuted),
             ),
           ],
         ],

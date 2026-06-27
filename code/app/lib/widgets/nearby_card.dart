@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import 'pharmacy_row.dart';
+import '../theme/fonts.dart';
 
 /// Compact "nearby pharmacies" card (DESIGN.md group card): shows the first few,
 /// then a "See all" link into the full Nearby screen. Shared by Results and Item
@@ -45,7 +46,7 @@ class NearbyCard extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                    fontFamily: 'Geist',
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: c.textPrimary),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 
 /// Tinted safety block for Schedule H1/X items (DESIGN.md): icon + label + message
 /// + a "confirm you hold a prescription" action. A first-class element, never a
@@ -41,7 +42,7 @@ class SafetyCallout extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Geist',
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: fg,
@@ -51,7 +52,7 @@ class SafetyCallout extends StatelessWidget {
                 Text(
                   item.safety.message,
                   style: TextStyle(
-                      fontFamily: 'Geist', fontSize: 12, height: 1.4, color: fg),
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, height: 1.4, color: fg),
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -59,7 +60,7 @@ class SafetyCallout extends StatelessWidget {
                   child: Text(
                     'I have a prescription  →',
                     style: TextStyle(
-                      fontFamily: 'Geist',
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: fg,

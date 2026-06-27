@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 
 /// The DESIGN.md badge family. Color = meaning:
 /// success = savings/Jan Aushadhi, warning = Rx (H/H1), danger = Schedule X,
@@ -37,7 +38,7 @@ class AppBadge extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontFamily: 'Geist',
+              fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
               fontSize: 12,
               fontWeight: FontWeight.w500,
               color: fg,

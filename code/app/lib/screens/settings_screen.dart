@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../theme/app_theme.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
+import '../theme/fonts.dart';
 
 /// Settings (DESIGN.md #6): appearance, language (Hindi later), privacy, about.
 /// Theme is owned by the app shell and threaded in via [onToggleTheme] /
@@ -84,7 +85,7 @@ class SettingsScreen extends StatelessWidget {
                     'pharmacy receipts. Prices from the open Indian Medicine Dataset '
                     'and official Jan Aushadhi catalogue; pharmacies from OpenStreetMap.',
                     style: TextStyle(
-                      fontFamily: 'Geist',
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 12,
                       height: 1.5,
                       color: c.textMuted,
@@ -135,7 +136,7 @@ class _Row extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Geist',
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: fg,
@@ -146,7 +147,7 @@ class _Row extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                        fontFamily: 'Geist', fontSize: 12, color: c.textMuted),
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted),
                   ),
                 ],
               ],
@@ -183,7 +184,7 @@ class _InfoBlock extends StatelessWidget {
             child: Text(
               text,
               style: TextStyle(
-                fontFamily: 'Geist',
+                fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                 fontSize: 13,
                 height: 1.5,
                 color: c.textSecondary,

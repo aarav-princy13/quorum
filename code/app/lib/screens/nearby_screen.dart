@@ -10,6 +10,7 @@ import '../widgets/app_badge.dart';
 import '../widgets/pharmacy_map.dart';
 import '../widgets/pharmacy_row.dart';
 import '../widgets/screen_header.dart';
+import '../theme/fonts.dart';
 
 /// Outcome of an address lookup: whether the address resolved, the resolved
 /// point (for map centring), and the pharmacies near it.
@@ -174,7 +175,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
                 child: Text(
                   _error!,
                   style: TextStyle(
-                      fontFamily: 'Geist', fontSize: 13, color: c.dangerText),
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.dangerText),
                 ),
               ),
             Expanded(
@@ -338,7 +339,7 @@ class _SelectedCard extends StatelessWidget {
                 Text(
                   pharmacy.name,
                   style: TextStyle(
-                    fontFamily: 'Geist',
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: c.textPrimary,
@@ -355,7 +356,7 @@ class _SelectedCard extends StatelessWidget {
                     Text(
                       '${pharmacy.distanceKm!.toStringAsFixed(1)} km away',
                       style: TextStyle(
-                          fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+                          fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textMuted),
                     ),
                 ]),
                 const SizedBox(height: 12),
@@ -439,7 +440,7 @@ class _EmptyHint extends StatelessWidget {
                   : 'Search an address to find pharmacies nearby.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontFamily: 'Geist',
+                fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: c.textSecondary,
@@ -451,7 +452,7 @@ class _EmptyHint extends StatelessWidget {
                 'Try a nearby landmark or a wider area.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                    fontFamily: 'Geist', fontSize: 12, color: c.textMuted),
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted),
               ),
             ],
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 
 /// Small secondary-weight section heading used between list groups.
 class SectionLabel extends StatelessWidget {
@@ -15,7 +16,7 @@ class SectionLabel extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontFamily: 'Geist',
+          fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
           fontSize: 13,
           fontWeight: FontWeight.w600,
           letterSpacing: -0.1,

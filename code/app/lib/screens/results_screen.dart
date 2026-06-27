@@ -12,6 +12,7 @@ import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
 import 'item_detail_screen.dart';
 import 'nearby_screen.dart';
+import '../theme/fonts.dart';
 
 /// How many pharmacies the inline card shows before deferring to the Nearby screen.
 const _kInlinePharmacies = 3;
@@ -161,7 +162,7 @@ class _SummaryStrip extends StatelessWidget {
               Text(
                 rupees(summary.totalSavingsInr),
                 style: TextStyle(
-                  fontFamily: 'Geist',
+                  fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                   fontSize: 34,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.5,
@@ -175,7 +176,7 @@ class _SummaryStrip extends StatelessWidget {
                   child: Text(
                     'you could save',
                     style: TextStyle(
-                        fontFamily: 'Geist', fontSize: 15, color: c.textSecondary),
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, color: c.textSecondary),
                   ),
                 ),
               ),
@@ -184,7 +185,7 @@ class _SummaryStrip extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             'across ${summary.nFound} of ${summary.nItems} medicines$rxLine',
-            style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
+            style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
           ),
         ],
       ),
@@ -228,7 +229,7 @@ class _ItemRow extends StatelessWidget {
                   child: Text(
                     item.query,
                     style: TextStyle(
-                      fontFamily: 'Geist',
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                       color: c.textPrimary,
@@ -244,7 +245,7 @@ class _ItemRow extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 [m.salt, m.strength, m.form].where((s) => s.isNotEmpty).join(' · '),
-                style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
+                style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
               ),
               if (item.hasSavings) ...[
                 const SizedBox(height: 10),
@@ -258,7 +259,7 @@ class _ItemRow extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
+                            fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
                       ),
                     ),
                   ],
@@ -268,7 +269,7 @@ class _ItemRow extends StatelessWidget {
                   '${rupees(item.cheapestAlternative!.unitPrice)}/unit '
                   'vs ${rupees(m.unitPrice)} · save '
                   '${rupees(item.savingsInrLine)} on ${item.qty}',
-                  style: TextStyle(fontFamily: 'Geist', fontSize: 12, color: c.textMuted),
+                  style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted),
                 ),
                 if (item.cheapestAuthoritative != null) ...[
                   const SizedBox(height: 8),
@@ -321,7 +322,7 @@ class _NotFoundSectionState extends State<_NotFoundSection> {
                   child: Text(
                     "Couldn't match $n ${n == 1 ? 'line' : 'lines'}",
                     style: TextStyle(
-                      fontFamily: 'Geist',
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: c.textSecondary,
@@ -345,7 +346,7 @@ class _NotFoundSectionState extends State<_NotFoundSection> {
                 item.query,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'Geist', fontSize: 14, color: c.textMuted),
+                style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 14, color: c.textMuted),
               ),
             ),
           Padding(
@@ -353,7 +354,7 @@ class _NotFoundSectionState extends State<_NotFoundSection> {
             child: Text(
               "Receipt header/details or items not in the catalogue — check manually.",
               style: TextStyle(
-                  fontFamily: 'Geist', fontSize: 11, height: 1.4, color: c.textMuted),
+                  fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 11, height: 1.4, color: c.textMuted),
             ),
           ),
         ],

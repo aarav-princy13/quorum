@@ -11,6 +11,7 @@ import '../services/parser/receipt_parser.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'results_screen.dart';
+import '../theme/fonts.dart';
 
 /// The pipeline (DESIGN.md "Analyzing"): on-device Apple Vision OCR → parse line
 /// items → signed `POST /v1/analyze` → the real Results screen. The photo stays
@@ -136,7 +137,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
                   Text(
                     'Analyzing',
                     style: TextStyle(
-                      fontFamily: 'Geist',
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.17,
@@ -190,14 +191,14 @@ class _LoadingState extends StatelessWidget {
           child: CircularProgressIndicator(strokeWidth: 2.5, color: c.primary),
         ),
         const SizedBox(height: 18),
-        Text(label, style: TextStyle(fontFamily: 'Geist', fontSize: 15, color: c.textPrimary)),
+        Text(label, style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, color: c.textPrimary)),
         const SizedBox(height: 6),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
             'The photo is read on your device and never uploaded.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Geist', fontSize: 12, height: 1.4, color: c.textMuted),
+            style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, height: 1.4, color: c.textMuted),
           ),
         ),
       ],
@@ -229,7 +230,7 @@ class _ErrorState extends StatelessWidget {
         Text(
           "Couldn't finish",
           style: TextStyle(
-              fontFamily: 'Geist', fontSize: 15, fontWeight: FontWeight.w500, color: c.textPrimary),
+              fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, fontWeight: FontWeight.w500, color: c.textPrimary),
         ),
         const SizedBox(height: 6),
         Padding(
@@ -237,7 +238,7 @@ class _ErrorState extends StatelessWidget {
           child: Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: 'Geist', fontSize: 12, height: 1.4, color: c.textMuted),
+            style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, height: 1.4, color: c.textMuted),
           ),
         ),
         const SizedBox(height: 18),
@@ -274,11 +275,11 @@ class _RecognizedState extends StatelessWidget {
           const SizedBox(height: 14),
           Text('No text found',
               style: TextStyle(
-                  fontFamily: 'Geist', fontSize: 15, fontWeight: FontWeight.w500, color: c.textPrimary)),
+                  fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 15, fontWeight: FontWeight.w500, color: c.textPrimary)),
           const SizedBox(height: 6),
           Text('Try a clearer, well-lit photo of the itemised section.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Geist', fontSize: 12, color: c.textMuted)),
+              style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted)),
           const SizedBox(height: 18),
           ShadButton.outline(
               onPressed: () => Navigator.of(context).maybePop(), child: const Text('Scan another')),
@@ -297,14 +298,14 @@ class _RecognizedState extends StatelessWidget {
         Text(
           'Read ${result.lines.length} lines on-device · $ms ms',
           style: TextStyle(
-              fontFamily: 'Geist', fontSize: 13, fontWeight: FontWeight.w600, color: c.textSecondary),
+              fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, fontWeight: FontWeight.w600, color: c.textSecondary),
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: c.surface1, borderRadius: BorderRadius.circular(10)),
           child: Text(note,
-              style: TextStyle(fontFamily: 'Geist', fontSize: 12, height: 1.4, color: c.textSecondary)),
+              style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, height: 1.4, color: c.textSecondary)),
         ),
         const SizedBox(height: 12),
         Expanded(
@@ -322,11 +323,11 @@ class _RecognizedState extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(line.text,
-                          style: TextStyle(fontFamily: 'Geist', fontSize: 14, color: c.textPrimary)),
+                          style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 14, color: c.textPrimary)),
                     ),
                     const SizedBox(width: 10),
                     Text('${(line.confidence * 100).round()}%',
-                        style: TextStyle(fontFamily: 'Geist', fontSize: 12, color: c.textMuted)),
+                        style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.textMuted)),
                   ],
                 ),
               );

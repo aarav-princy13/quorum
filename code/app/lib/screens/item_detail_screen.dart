@@ -10,6 +10,7 @@ import '../widgets/safety_callout.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
 import 'nearby_screen.dart';
+import '../theme/fonts.dart';
 
 /// One medicine in full (DESIGN.md #4): what you're paying now -> savings ->
 /// safety -> the full cheaper-alternatives ladder (Jan Aushadhi flagged) ->
@@ -99,13 +100,13 @@ class _CurrentPriceBlock extends StatelessWidget {
         children: [
           Text(
             "What you're paying",
-            style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: c.textSecondary),
+            style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
           ),
           const SizedBox(height: 6),
           Text(
             matched.name,
             style: TextStyle(
-              fontFamily: 'Geist',
+              fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: c.textPrimary,
@@ -119,7 +120,7 @@ class _CurrentPriceBlock extends StatelessWidget {
               Text(
                 '${rupees(matched.unitPrice)}/unit',
                 style: TextStyle(
-                  fontFamily: 'Geist',
+                  fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
                   letterSpacing: -0.3,
@@ -135,7 +136,7 @@ class _CurrentPriceBlock extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textMuted),
                   ),
                 ),
               ],
@@ -152,7 +153,7 @@ class _CurrentPriceBlock extends StatelessWidget {
                     'Switching could save ${rupees(item.savingsInrLine)} '
                     'on ${item.qty} unit${item.qty == 1 ? '' : 's'}',
                     style: TextStyle(
-                        fontFamily: 'Geist', fontSize: 13, color: c.successText),
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.successText),
                   ),
                 ),
               ],
@@ -184,7 +185,7 @@ class _AlternativesSection extends StatelessWidget {
           Text(
             'No cheaper equivalent found in the catalogue.',
             style: TextStyle(
-              fontFamily: 'Geist',
+              fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
               fontSize: 13,
               color: c.textMuted,
               fontStyle: FontStyle.italic,
@@ -209,7 +210,7 @@ class _AlternativesSection extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             hiddenNote,
-            style: TextStyle(fontFamily: 'Geist', fontSize: 11, color: c.textMuted),
+            style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 11, color: c.textMuted),
           ),
         ],
       ],
@@ -245,7 +246,7 @@ class _AlternativeRow extends StatelessWidget {
                 Text(
                   alt.name,
                   style: TextStyle(
-                    fontFamily: 'Geist',
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: c.textPrimary,
@@ -275,7 +276,7 @@ class _AlternativeRow extends StatelessWidget {
               Text(
                 '${rupees(alt.unitPrice)}/unit',
                 style: TextStyle(
-                  fontFamily: 'Geist',
+                  fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: c.textPrimary,
@@ -286,7 +287,7 @@ class _AlternativeRow extends StatelessWidget {
                 Text(
                   'save $pct%',
                   style: TextStyle(
-                      fontFamily: 'Geist', fontSize: 12, color: c.successText),
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, color: c.successText),
                 ),
               ],
             ],

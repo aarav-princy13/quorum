@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../theme/app_theme.dart';
+import '../theme/fonts.dart';
 
 /// The shared screen header (DESIGN.md): title + optional subtitle, an optional
 /// back affordance, and trailing actions (theme toggle, settings gear). One
@@ -44,7 +45,7 @@ class ScreenHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontFamily: 'Geist',
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     letterSpacing: -0.17,
@@ -58,7 +59,7 @@ class ScreenHeader extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textMuted),
                   ),
                 ],
               ],

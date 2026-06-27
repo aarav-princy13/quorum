@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
+import 'fonts.dart';
 import 'tokens.dart';
 
 /// Maps the DESIGN.md token table (single source of truth in [AppPalette]) onto
@@ -36,9 +37,11 @@ ShadColorScheme _colorScheme(AppPalette p) => ShadColorScheme(
 ShadThemeData _theme(Brightness brightness, AppPalette p) => ShadThemeData(
       brightness: brightness,
       colorScheme: _colorScheme(p),
-      // Bundled Geist (offline, no runtime font fetch). Noto Sans Devanagari is
-      // bundled too; its fallback is wired in the Hindi phase (see DESIGN.md).
-      textTheme: ShadTextTheme(family: 'Geist'),
+      // Bundled Geist (offline, no runtime font fetch) with Noto Sans Devanagari
+      // as the script fallback, so Hindi text in shadcn components (buttons,
+      // inputs) renders too — not just our own TextStyles.
+      textTheme: ShadTextTheme(family: AppFonts.family)
+          .apply(fontFamilyFallback: AppFonts.fallback),
     );
 
 final ShadThemeData lightTheme = _theme(Brightness.light, AppPalette.light);

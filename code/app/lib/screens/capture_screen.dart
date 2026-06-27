@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import 'analyzing_screen.dart';
 import 'results_screen.dart';
 import 'settings_screen.dart';
+import '../theme/fonts.dart';
 
 /// Home screen (DESIGN.md): camera + "Scan receipt" (primary), gallery fallback,
 /// and the privacy line. The photo is OCR'd on-device; only text is ever used.
@@ -72,7 +73,7 @@ class CaptureScreen extends StatelessWidget {
                     child: Text(
                       'Brand → Generic',
                       style: TextStyle(
-                        fontFamily: 'Geist',
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.17,
@@ -113,7 +114,7 @@ class CaptureScreen extends StatelessWidget {
                       'Scan a pharmacy receipt',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Geist',
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                         fontSize: 22,
                         fontWeight: FontWeight.w600,
                         letterSpacing: -0.3,
@@ -126,7 +127,7 @@ class CaptureScreen extends StatelessWidget {
                       'and prescription-safety flags.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: 'Geist',
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                         fontSize: 14,
                         height: 1.45,
                         color: c.textSecondary,
@@ -159,7 +160,7 @@ class CaptureScreen extends StatelessWidget {
                       'Your photo is read on your device and never uploaded — '
                       'only the text is used.',
                       style: TextStyle(
-                        fontFamily: 'Geist',
+                        fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
                         fontSize: 12,
                         height: 1.4,
                         color: c.textMuted,
