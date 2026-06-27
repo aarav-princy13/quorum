@@ -67,10 +67,15 @@ Flutter 3.44.4, platforms **ios,android**. Bundle id `com.brandtogeneric.brandTo
 - **Theme:** `lib/theme/tokens.dart` (DESIGN.md palette, light+dark) → `app_theme.dart` (`ShadThemeData`
   via `shadcn_ui`) + `context.colors` for semantic families. Geist + Noto Sans Devanagari bundled
   (`assets/fonts/`). App-wide momentum scroll (`AppScrollBehavior` in `main.dart`).
-- **Screens (`lib/screens/`):** Capture (home: camera/gallery + privacy line) → Analyzing (spinner →
-  OCR → parse → API) → Results (savings strip, bordered drug rows w/ Rx/Schedule-X badges + Jan Aushadhi
-  anchor, safety callouts, nearby card, collapsible "Couldn't match N lines"). Mock Results reachable as a
-  labelled "sample".
+- **Screens (`lib/screens/`):** Capture (home: camera/gallery + privacy line + Settings gear) → Analyzing
+  (spinner → OCR → parse → API) → Results (savings strip, bordered drug rows w/ Rx/Schedule-X badges + Jan
+  Aushadhi anchor, safety callouts, nearby card, collapsible "Couldn't match N lines"). Mock Results
+  reachable as a labelled "sample". **Item detail** (tap a found row: current price, savings, safety
+  callout, the FULL cheaper-alternatives ladder w/ Jan Aushadhi flagged, where-to-buy), **Nearby**
+  (distance-ranked full list + empty state; honest "turn on location to rank" note), **Settings**
+  (appearance/theme, language [English; हिन्दी "coming soon"], privacy, about). Shared widgets in
+  `lib/widgets/` (ScreenHeader, NearbyCard, PharmacyRow, SafetyCallout, SectionLabel, Disclaimer, `rupees`).
+  `ResultItem` now parses the backend's full `alternatives` list (was dropped).
 - **On-device OCR (`lib/services/ocr/`):** `OcrEngine` interface; **Apple Vision** impl via a platform
   channel — native `OcrPlugin` (VNRecognizeTextRequest) in `ios/Runner/AppDelegate.swift`, channel
   `brand_to_generic/ocr`, returns text+confidence+**bbox**. Android/ML Kit would slot in behind the interface.
@@ -122,8 +127,9 @@ Neutral shadcn surfaces + one indigo accent; color = meaning (green savings / am
 Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card-slop. Implemented in §6.
 
 ## 9. ⭐ NEXT — what to work on (prioritized; nothing started)
-1. **Remaining product screens:** Item detail, Nearby (full list + map), Settings. Wire **Hindi/Devanagari
-   fallback** (font bundled; fallback not yet applied through shadcn's single-family text theme).
+1. **Product screens — DONE** (Item detail, Nearby [list; **map still TODO**], Settings; see §6). Still
+   open: wire **Hindi/Devanagari fallback** (font bundled; fallback not yet applied through shadcn's
+   single-family text theme — needs `fontFamilyFallback` threaded through, not just `fontFamily: 'Geist'`).
 2. **Location:** add `geolocator` → send `{lat,lon}` in the payload → distance-ranked nearby (none sent now,
    so pharmacies come back unranked). Needs iOS location usage strings.
 3. **Parser polish:** real qty extraction (currently 1 → understates line savings); optionally strip the
@@ -145,7 +151,10 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
 
 ## 10. Known-good invariants (don't regress)
 - `python3 code/test_matching.py` → **0 failures** (precision guard, incl. Saridon must-not-match).
-- `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser real-box + signing).
+- `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser real-box + signing +
+  screens smoke tests; 10 total).
+- `code/app/lib/data/sample_result.dart` IS tracked — the `.gitignore` `data/` rule is now root-anchored
+  (`/data/`) so it no longer swallows app source. Don't revert that anchor (a fresh clone wouldn't build).
 - Dart request signature == `b2g.security.sign` (the signing test pins this — a mismatch = silent 401s).
 - Column detection must never drop meds (the ≥60%-of-heuristic safety net enforces this).
 
