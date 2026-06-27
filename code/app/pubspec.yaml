@@ -37,6 +37,7 @@ dependencies:
   shadcn_ui: ^0.55.0
   image_picker: ^1.2.2
   crypto: ^3.0.7
+  geolocator: ^13.0.0
 
 dev_dependencies:
   flutter_test:

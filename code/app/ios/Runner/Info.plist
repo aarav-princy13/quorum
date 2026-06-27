@@ -6,6 +6,8 @@
 	<string>Used to photograph your pharmacy receipt. The photo is read on your device and never uploaded.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used to pick a receipt photo. The photo is read on your device and never uploaded.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to rank nearby pharmacies by distance. Your location is sent only to find pharmacies near you and is never stored.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

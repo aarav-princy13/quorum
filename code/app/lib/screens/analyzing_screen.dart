@@ -5,6 +5,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../config/api_config.dart';
 import '../data/sample_result.dart';
 import '../services/api/b2g_api.dart';
+import '../services/location/location_service.dart';
 import '../services/ocr/ocr_engine.dart';
 import '../services/parser/receipt_parser.dart';
 import '../theme/app_theme.dart';
@@ -29,14 +30,20 @@ enum _Phase { reading, matching, recognized, error }
 
 class _AnalyzingScreenState extends State<AnalyzingScreen> {
   final B2gApi _api = B2gApi();
+  final LocationService _location = const LocationService();
   _Phase _phase = _Phase.reading;
   OcrResult? _result;
   String? _error;
   int _ocrMs = 0;
 
+  /// Started alongside OCR so the (best-effort) fix overlaps the slow work
+  /// instead of adding latency before the API call.
+  Future<LatLon?>? _locationFuture;
+
   @override
   void initState() {
     super.initState();
+    _locationFuture = _location.currentLatLon();
     _run();
   }
 
@@ -82,10 +89,12 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       return;
     }
 
-    // 2) Match via the backend
+    // 2) Match via the backend. Location is best-effort: if we have a fix, the
+    // server ranks pharmacies by distance; if not, it simply omits them.
     setState(() => _phase = _Phase.matching);
+    final loc = await _locationFuture;
     try {
-      final resp = await _api.analyze(items);
+      final resp = await _api.analyze(items, lat: loc?.lat, lon: loc?.lon);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(

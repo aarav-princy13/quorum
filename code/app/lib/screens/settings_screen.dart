@@ -67,7 +67,8 @@ class SettingsScreen extends StatelessWidget {
                     text:
                         'Your receipt photo is read on your device and never uploaded. '
                         'Only the extracted text is sent — over a signed, encrypted '
-                        'connection — to look up prices.',
+                        'connection — to look up prices. Location, if you allow it, is '
+                        'used only to rank nearby pharmacies and is never stored.',
                   ),
                   const SizedBox(height: 22),
                   const SectionLabel('About'),
