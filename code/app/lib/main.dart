@@ -67,7 +67,6 @@ class _BrandToGenericAppState extends State<BrandToGenericApp> {
         ocr: _ocr,
         onToggleTheme: _cycleTheme,
         themeLabel: _themeLabel,
-        hindi: _hi,
         onSetHindi: _setHindi,
       ),
     );

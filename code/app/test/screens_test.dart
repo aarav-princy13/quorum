@@ -1,6 +1,6 @@
 // Smoke tests for the product screens added this session: Item detail, Nearby,
 // Settings. Each is wrapped in a ShadApp so `context.colors` (theme) resolves.
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -153,6 +153,24 @@ void main() {
     expect(picked, isTrue); // tapping switches language via the callback
   });
 
+  testWidgets('language checkmark follows the live selection (not the stale arg)',
+      (tester) async {
+    // Mirrors the real shell: a switch rebuilds Lang above the (already-built)
+    // Settings route. The check must move to हिन्दी, not stay on English.
+    await tester.pumpWidget(const _LangHarness());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('हिन्दी'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('सेटिंग्स'), findsOneWidget); // switched to Hindi
+    final checkY = tester.getCenter(find.byIcon(Icons.check)).dy;
+    final hindiY = tester.getCenter(find.text('हिन्दी')).dy;
+    final engY = tester.getCenter(find.text('English')).dy;
+    expect((checkY - hindiY).abs() < (checkY - engY).abs(), isTrue,
+        reason: 'checkmark should be on the हिन्दी row, not English');
+  });
+
   testWidgets('settings renders in Hindi when the locale is Hindi', (tester) async {
     await tester.pumpWidget(_host(
       const SettingsScreen(),
@@ -162,4 +180,25 @@ void main() {
     expect(find.text('सेटिंग्स'), findsOneWidget); // "Settings" in Hindi
     expect(tester.takeException(), isNull);
   });
+}
+
+/// A minimal stand-in for the app shell: holds the language flag, rebuilds [Lang]
+/// on switch (Lang sits above the already-built Settings route, as in main.dart).
+class _LangHarness extends StatefulWidget {
+  const _LangHarness();
+  @override
+  State<_LangHarness> createState() => _LangHarnessState();
+}
+
+class _LangHarnessState extends State<_LangHarness> {
+  bool _hi = false;
+  @override
+  Widget build(BuildContext context) => ShadApp(
+        debugShowCheckedModeBanner: false,
+        theme: lightTheme,
+        home: Lang(
+          hi: _hi,
+          child: SettingsScreen(onSetHindi: (v) => setState(() => _hi = v)),
+        ),
+      );
 }

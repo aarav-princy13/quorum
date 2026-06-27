@@ -19,14 +19,12 @@ class CaptureScreen extends StatelessWidget {
     required this.ocr,
     this.onToggleTheme,
     this.themeLabel,
-    this.hindi = false,
     this.onSetHindi,
   });
 
   final OcrEngine ocr;
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
-  final bool hindi;
   final ValueChanged<bool>? onSetHindi;
 
   Future<void> _capture(BuildContext context, ImageSource source) async {
@@ -93,7 +91,6 @@ class CaptureScreen extends StatelessWidget {
                         builder: (_) => SettingsScreen(
                           onToggleTheme: onToggleTheme,
                           themeLabel: themeLabel,
-                          hindi: hindi,
                           onSetHindi: onSetHindi,
                         ),
                       ),

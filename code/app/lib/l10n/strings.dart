@@ -220,4 +220,8 @@ class Lang extends InheritedWidget {
 extension LangX on BuildContext {
   /// The active strings. Use as `context.s.scanReceipt`.
   S get s => Lang.of(this).strings;
+
+  /// The live language flag. Reads from [Lang] (above the Navigator), so it stays
+  /// correct after a switch even inside an already-pushed route.
+  bool get isHindi => Lang.of(this).hi;
 }

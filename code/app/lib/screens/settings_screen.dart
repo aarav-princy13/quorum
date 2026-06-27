@@ -14,24 +14,23 @@ class SettingsScreen extends StatelessWidget {
     super.key,
     this.onToggleTheme,
     this.themeLabel,
-    this.hindi = false,
     this.onSetHindi,
   });
 
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
-  final bool hindi;
   final ValueChanged<bool>? onSetHindi;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final s = context.s;
+    final hi = context.isHindi; // live value — reflects a switch immediately
     Widget langRow(String title, bool isHindi) => _Row(
           icon: Icons.translate_outlined,
           title: title,
           onTap: onSetHindi == null ? null : () => onSetHindi!(isHindi),
-          trailing: hindi == isHindi
+          trailing: hi == isHindi
               ? Icon(Icons.check, size: 18, color: c.primary)
               : null,
         );
