@@ -10,6 +10,7 @@ import 'package:brand_to_generic/screens/item_detail_screen.dart';
 import 'package:brand_to_generic/screens/nearby_screen.dart';
 import 'package:brand_to_generic/screens/settings_screen.dart';
 import 'package:brand_to_generic/theme/app_theme.dart';
+import 'package:brand_to_generic/widgets/pharmacy_map.dart';
 
 Widget _host(Widget child) => ShadApp(
       debugShowCheckedModeBanner: false,
@@ -116,6 +117,19 @@ void main() {
     await tester.tap(find.text('Search'));
     await tester.pumpAndSettle();
     expect(find.textContaining("Couldn't find that address"), findsOneWidget);
+  });
+
+  testWidgets('nearby map toggle renders the map', (tester) async {
+    await tester.pumpWidget(_host(NearbyScreen(pharmacies: response.pharmacies)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Map'), findsOneWidget); // toggle shown when pharmacies exist
+    await tester.tap(find.text('Map'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.byType(PharmacyMap), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('settings renders its sections and theme control', (tester) async {

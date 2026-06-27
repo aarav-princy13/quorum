@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/analysis.dart';
 import '../services/api/b2g_api.dart';
 import '../services/location/location_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_badge.dart';
+import '../widgets/pharmacy_map.dart';
 import '../widgets/pharmacy_row.dart';
 import '../widgets/screen_header.dart';
 
-/// Outcome of an address lookup: whether the address resolved, and the
-/// pharmacies near it (empty = resolved but nothing in range).
+/// Outcome of an address lookup: whether the address resolved, the resolved
+/// point (for map centring), and the pharmacies near it.
 class NearbyResult {
-  const NearbyResult({required this.addressFound, required this.pharmacies});
+  const NearbyResult({
+    required this.addressFound,
+    required this.pharmacies,
+    this.origin,
+  });
 
   final bool addressFound;
   final List<Pharmacy> pharmacies;
+  final LatLon? origin;
 }
 
 typedef AddressLookup = Future<NearbyResult> Function(String address);
@@ -30,18 +38,26 @@ AddressLookup defaultAddressLookup() {
       return const NearbyResult(addressFound: false, pharmacies: []);
     }
     final pharmacies = await api.nearby(lat: geo.lat, lon: geo.lon);
-    return NearbyResult(addressFound: true, pharmacies: pharmacies);
+    return NearbyResult(addressFound: true, pharmacies: pharmacies, origin: geo);
   };
 }
 
-/// The full nearby list (DESIGN.md #5): distance-ranked pharmacies, Jan Aushadhi
-/// flagged. When the device location isn't available (permission denied), the
-/// user can type an address to search instead. A map view is a later addition.
+/// The full nearby view (DESIGN.md #5): a distance-ranked list OR an OpenStreetMap
+/// map of the same pharmacies, with Jan Aushadhi flagged. When device location
+/// isn't available the user can type an address to search instead.
 class NearbyScreen extends StatefulWidget {
-  const NearbyScreen({super.key, required this.pharmacies, this.addressLookup});
+  const NearbyScreen({
+    super.key,
+    required this.pharmacies,
+    this.origin,
+    this.addressLookup,
+  });
 
-  /// Pharmacies already known (e.g. from the receipt scan's location). May be empty.
   final List<Pharmacy> pharmacies;
+
+  /// The point the pharmacies are relative to (from the receipt scan's GPS fix),
+  /// if known — used to centre the map and drop a "here" marker.
+  final LatLon? origin;
 
   /// Address -> nearby lookup. Defaults to [defaultAddressLookup]; tests inject a fake.
   final AddressLookup? addressLookup;
@@ -55,9 +71,12 @@ class _NearbyScreenState extends State<NearbyScreen> {
   final TextEditingController _addr = TextEditingController();
 
   late List<Pharmacy> _pharmacies = widget.pharmacies;
+  late LatLon? _origin = widget.origin;
   bool _loading = false;
+  bool _mapMode = false;
   String? _error;
-  String? _searchedLabel; // the address the current list is for, if any
+  String? _searchedLabel;
+  Pharmacy? _selected;
 
   @override
   void dispose() {
@@ -72,6 +91,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _selected = null;
     });
     try {
       final res = await _lookup(query);
@@ -86,6 +106,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
       setState(() {
         _loading = false;
         _pharmacies = res.pharmacies;
+        _origin = res.origin;
         _searchedLabel = query;
       });
     } catch (e) {
@@ -97,11 +118,22 @@ class _NearbyScreenState extends State<NearbyScreen> {
     }
   }
 
+  Future<void> _openInMaps(Pharmacy p) async {
+    if (p.lat == null || p.lon == null) return;
+    final uri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}');
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {/* best-effort */}
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final ranked = _rank(_pharmacies);
     final janCount = _pharmacies.where((p) => p.isJanAushadhi).length;
+    final canMap = ranked.isNotEmpty;
+    final showMap = _mapMode && canMap;
     final subtitle = _searchedLabel != null
         ? 'Near $_searchedLabel · ${_pharmacies.length} found'
         : '${_pharmacies.length} found'
@@ -117,36 +149,47 @@ class _NearbyScreenState extends State<NearbyScreen> {
               title: 'Nearby pharmacies',
               subtitle: subtitle,
               onBack: () => Navigator.of(context).maybePop(),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
-                children: [
-                  _AddressBar(
-                    controller: _addr,
-                    loading: _loading,
-                    onSearch: _search,
+              actions: [
+                if (canMap)
+                  _ViewToggle(
+                    mapMode: _mapMode,
+                    onChanged: (m) => setState(() {
+                      _mapMode = m;
+                      _selected = null;
+                    }),
                   ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      _error!,
-                      style: TextStyle(
-                          fontFamily: 'Geist', fontSize: 13, color: c.dangerText),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  if (_loading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 28),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (ranked.isEmpty)
-                    _EmptyHint(searched: _searchedLabel != null)
-                  else
-                    for (final p in ranked) PharmacyRow(pharmacy: p, divider: true),
-                ],
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              child: _AddressBar(
+                controller: _addr,
+                loading: _loading,
+                onSearch: _search,
               ),
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                      fontFamily: 'Geist', fontSize: 13, color: c.dangerText),
+                ),
+              ),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : showMap
+                      ? _MapView(
+                          pharmacies: ranked,
+                          origin: _origin,
+                          selected: _selected,
+                          onSelect: (p) => setState(() => _selected = p),
+                          onClear: () => setState(() => _selected = null),
+                          onOpenMaps: _openInMaps,
+                        )
+                      : _ListView(ranked: ranked, searched: _searchedLabel != null),
             ),
           ],
         ),
@@ -164,6 +207,175 @@ class _NearbyScreenState extends State<NearbyScreen> {
         return da.compareTo(db);
       });
     return out;
+  }
+}
+
+class _ViewToggle extends StatelessWidget {
+  const _ViewToggle({required this.mapMode, required this.onChanged});
+
+  final bool mapMode;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget btn(String label, IconData icon, bool isMap) {
+      final selected = mapMode == isMap;
+      final child = Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 15),
+        const SizedBox(width: 5),
+        Text(label),
+      ]);
+      return selected
+          ? ShadButton(size: ShadButtonSize.sm, onPressed: () {}, child: child)
+          : ShadButton.ghost(
+              size: ShadButtonSize.sm, onPressed: () => onChanged(isMap), child: child);
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      btn('List', Icons.view_list_outlined, false),
+      const SizedBox(width: 4),
+      btn('Map', Icons.map_outlined, true),
+    ]);
+  }
+}
+
+class _ListView extends StatelessWidget {
+  const _ListView({required this.ranked, required this.searched});
+
+  final List<Pharmacy> ranked;
+  final bool searched;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ranked.isEmpty) return _EmptyHint(searched: searched);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+      children: [for (final p in ranked) PharmacyRow(pharmacy: p, divider: true)],
+    );
+  }
+}
+
+class _MapView extends StatelessWidget {
+  const _MapView({
+    required this.pharmacies,
+    required this.origin,
+    required this.selected,
+    required this.onSelect,
+    required this.onClear,
+    required this.onOpenMaps,
+  });
+
+  final List<Pharmacy> pharmacies;
+  final LatLon? origin;
+  final Pharmacy? selected;
+  final void Function(Pharmacy) onSelect;
+  final VoidCallback onClear;
+  final void Function(Pharmacy) onOpenMaps;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: PharmacyMap(
+            pharmacies: pharmacies,
+            origin: origin,
+            selected: selected,
+            onSelect: onSelect,
+          ),
+        ),
+        if (selected != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: _SelectedCard(
+              pharmacy: selected!,
+              onClose: onClear,
+              onOpenMaps: () => onOpenMaps(selected!),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SelectedCard extends StatelessWidget {
+  const _SelectedCard({
+    required this.pharmacy,
+    required this.onClose,
+    required this.onOpenMaps,
+  });
+
+  final Pharmacy pharmacy;
+  final VoidCallback onClose;
+  final VoidCallback onOpenMaps;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+      decoration: BoxDecoration(
+        color: c.surface2,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: c.border, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x22000000),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pharmacy.name,
+                  style: TextStyle(
+                    fontFamily: 'Geist',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: c.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(children: [
+                  if (pharmacy.isJanAushadhi) ...[
+                    const AppBadge('Jan Aushadhi',
+                        tone: BadgeTone.success, icon: Icons.verified_outlined),
+                    const SizedBox(width: 8),
+                  ],
+                  if (pharmacy.distanceKm != null)
+                    Text(
+                      '${pharmacy.distanceKm!.toStringAsFixed(1)} km away',
+                      style: TextStyle(
+                          fontFamily: 'Geist', fontSize: 13, color: c.textMuted),
+                    ),
+                ]),
+                const SizedBox(height: 12),
+                ShadButton(
+                  size: ShadButtonSize.sm,
+                  onPressed: onOpenMaps,
+                  leading: const Icon(Icons.directions_outlined, size: 16),
+                  child: const Text('Open in Maps'),
+                ),
+              ],
+            ),
+          ),
+          ShadButton.ghost(
+            size: ShadButtonSize.sm,
+            onPressed: onClose,
+            child: Icon(Icons.close, size: 16, color: c.textMuted),
+          ),
+        ],
+      ),
+    );
   }
 }
 

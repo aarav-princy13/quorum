@@ -74,7 +74,7 @@ Flutter 3.44.4, platforms **ios,android**. Bundle id `com.brandtogeneric.brandTo
   Aushadhi anchor, safety callouts, nearby card, collapsible "Couldn't match N lines"). Mock Results
   reachable as a labelled "sample". **Item detail** (tap a found row: current price, savings, safety
   callout, the FULL cheaper-alternatives ladder w/ Jan Aushadhi flagged, where-to-buy), **Nearby**
-  (distance-ranked full list + empty state; honest "turn on location to rank" note), **Settings**
+  (distance-ranked list + **List/Map toggle** [OSM map, pins, Open in Maps] + address search + empty state), **Settings**
   (appearance/theme, language [English; हिन्दी "coming soon"], privacy, about). Shared widgets in
   `lib/widgets/` (ScreenHeader, NearbyCard, PharmacyRow, SafetyCallout, SectionLabel, Disclaimer, `rupees`).
   `ResultItem` now parses the backend's full `alternatives` list (was dropped).
@@ -129,7 +129,7 @@ Neutral shadcn surfaces + one indigo accent; color = meaning (green savings / am
 Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card-slop. Implemented in §6.
 
 ## 9. ⭐ NEXT — what to work on (prioritized; nothing started)
-1. **Product screens — DONE** (Item detail, Nearby [list; **map still TODO**], Settings; see §6). Still
+1. **Product screens — DONE** (Item detail, Nearby [list + OSM **map**], Settings; see §6). Still
    open: wire **Hindi/Devanagari fallback** (font bundled; fallback not yet applied through shadcn's
    single-family text theme — needs `fontFamilyFallback` threaded through, not just `fontFamily: 'Geist'`).
 2. **Location — DONE (GPS + address fallback):** `geolocator` + `geocoding` wired. `LocationService`
@@ -140,7 +140,12 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
    **`POST /v1/nearby`** (NEW endpoint, signed; body `{location}` → `{pharmacies}`). Both endpoints filter to
    `NEARBY_MAX_KM`=50 (a US point → empty, honestly, vs India-only data). iOS
    `NSLocationWhenInUseUsageDescription` + Android COARSE/FINE perms added; Settings privacy note covers it.
-   Still TODO: a **map** view (next). (`flutter run` auto-runs `pod install` for the new plugins.)
+   **Map view DONE:** Nearby has a **List/Map toggle** (`flutter_map` + OSM tiles, no API key; `latlong2`).
+   `lib/widgets/pharmacy_map.dart` drops a pin per pharmacy (Jan Aushadhi = success colour) + an optional
+   "here" marker for the searched/located point; tap a pin → card with name/distance + **Open in Maps**
+   (`url_launcher`, https maps URL — no iOS scheme whitelist needed). Address-search sets the map origin;
+   the GPS-scan path centres on the pharmacy centroid (threading the GPS fix as a "here" marker is a minor
+   follow-up). (`flutter run` auto-runs `pod install` for the native plugins.)
 3. **Parser polish — qty extraction DONE:** column mode now reads per-line qty from a detected "Qty"
    header, aligned by row, validated 1–99, ambiguity/none → unknown (parser `LineItem.qty` is `int?`,
    omitted from the payload; flat OCR stays unknown). **Backend savings semantics FIXED** (`pipeline.py`):
@@ -183,8 +188,8 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
   per-pack × qty; unknown qty → one pack).
 - `python3 code/test_safety.py` → **0 failures** (H/H1/X gazette reconciliation incl. phenobarbital-not-X
   guard + conservative overrides). After editing `b2g/schedule.py`, re-run `recompute_schedule.py`.
-- `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser real-box + signing +
-  screens smoke tests; 10 total).
+- `cd code/app && flutter analyze` clean; `flutter test` green (widget + parser qty + signing +
+  screens/map smoke tests; 14 total). Map tests log OSM tile 400s (no network in CI) — harmless, tests pass.
 - `code/app/lib/data/sample_result.dart` IS tracked — the `.gitignore` `data/` rule is now root-anchored
   (`/data/`) so it no longer swallows app source. Don't revert that anchor (a fresh clone wouldn't build).
 - Dart request signature == `b2g.security.sign` (the signing test pins this — a mismatch = silent 401s).
