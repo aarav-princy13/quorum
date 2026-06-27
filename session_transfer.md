@@ -47,7 +47,9 @@ secrets/         (gitignored) dev API key (keys.json) + self-signed TLS cert
   Guards: unit-aware strengths (1gm=1000mg), pack-size-aware, discriminator guard, median outlier floor.
 - **Secure HTTPS API** (`server.py`): TLS, API key + HMAC(SHA256) with per-request nonce, rate-limit,
   strict caps, **rejects chunked bodies** (client must send Content-Length), read-only DB.
-  `client_example.py` is the signed-request blueprint (ported to Dart, §6).
+  `client_example.py` is the signed-request blueprint (ported to Dart, §6). Routes: `POST /v1/analyze`,
+  **`POST /v1/nearby`** (`{location}`→`{pharmacies}`; backs address search), `GET /v1/health`. Nearby
+  ranks within `NEARBY_MAX_KM`=50 (`nearby_pharmacies(..., max_km=)` in `pipeline.py`).
 
 ### Backend changes this session
 1. **Schedule safety fix (DMARDs):** added DMARD/immunosuppressant/biologic salts (hydroxychloroquine,
@@ -130,13 +132,15 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
 1. **Product screens — DONE** (Item detail, Nearby [list; **map still TODO**], Settings; see §6). Still
    open: wire **Hindi/Devanagari fallback** (font bundled; fallback not yet applied through shadcn's
    single-family text theme — needs `fontFamilyFallback` threaded through, not just `fontFamily: 'Geist'`).
-2. **Location — DONE:** `geolocator` wired. `LocationService` (`lib/services/location/`) is best-effort
-   (never throws/blocks); started during OCR so the fix overlaps. Analyzing screen passes `{lat,lon}` to
-   `analyze()` → server distance-ranks pharmacies. iOS `NSLocationWhenInUseUsageDescription` +
-   Android COARSE/FINE perms added; Settings privacy note covers it. **Behaviour:** the server only returns
-   pharmacies WHEN a location is sent — so if the user denies permission, Nearby is empty (no location = no
-   "nearby" claim, by design). Still TODO: a **map** view; optionally a server fallback to an unranked list
-   for denied users. (`flutter run` auto-runs `pod install` for the new plugin.)
+2. **Location — DONE (GPS + address fallback):** `geolocator` + `geocoding` wired. `LocationService`
+   (`lib/services/location/`): `currentLatLon()` (best-effort GPS, never throws/blocks; started during OCR so
+   the fix overlaps) + `geocode(address)` (OS geocoder, no API key). Analyzing screen passes `{lat,lon}` to
+   `analyze()` → server distance-ranks. **Denied GPS?** Results shows a "Find nearby pharmacies" button →
+   Nearby screen has an **address search** box → `LocationService.geocode` → `B2gApi.nearby` →
+   **`POST /v1/nearby`** (NEW endpoint, signed; body `{location}` → `{pharmacies}`). Both endpoints filter to
+   `NEARBY_MAX_KM`=50 (a US point → empty, honestly, vs India-only data). iOS
+   `NSLocationWhenInUseUsageDescription` + Android COARSE/FINE perms added; Settings privacy note covers it.
+   Still TODO: a **map** view (next). (`flutter run` auto-runs `pod install` for the new plugins.)
 3. **Parser polish:** real qty extraction (currently 1 → understates line savings); optionally strip the
    "34.27 |" S.No prefix on-device (backend already tolerates it).
 4. **On-device OCR productionization:** validate ML Kit on a real Android device; decide if/how to integrate

@@ -83,10 +83,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('nearby screen has an empty state', (tester) async {
+  testWidgets('nearby screen prompts for an address when empty', (tester) async {
     await tester.pumpWidget(_host(const NearbyScreen(pharmacies: [])));
     await tester.pumpAndSettle();
-    expect(find.text('No pharmacies found nearby'), findsOneWidget);
+    expect(find.text('Search an address to find pharmacies nearby.'), findsOneWidget);
+  });
+
+  testWidgets('nearby address search populates results via injected lookup',
+      (tester) async {
+    Future<NearbyResult> fakeLookup(String address) async {
+      if (address.toLowerCase().contains('nowhere')) {
+        return const NearbyResult(addressFound: false, pharmacies: []);
+      }
+      return const NearbyResult(addressFound: true, pharmacies: [
+        Pharmacy(
+            name: 'Test Chemist', lat: 0, lon: 0, kind: 'pharmacy', distanceKm: 0.5),
+      ]);
+    }
+
+    await tester.pumpWidget(
+      _host(NearbyScreen(pharmacies: const [], addressLookup: fakeLookup)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(EditableText), '221B Baker Street');
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    expect(find.text('Test Chemist'), findsOneWidget);
+
+    // An unresolvable address surfaces an honest error.
+    await tester.enterText(find.byType(EditableText), 'nowhere land');
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining("Couldn't find that address"), findsOneWidget);
   });
 
   testWidgets('settings renders its sections and theme control', (tester) async {

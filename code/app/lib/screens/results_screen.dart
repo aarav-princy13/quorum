@@ -103,11 +103,19 @@ class ResultsScreen extends StatelessWidget {
                     ],
                   ],
                   const SizedBox(height: 22),
-                  NearbyCard(
-                    pharmacies: data.pharmacies,
-                    maxInline: _kInlinePharmacies,
-                    onSeeAll: () => _openNearby(context),
-                  ),
+                  if (data.pharmacies.isNotEmpty)
+                    NearbyCard(
+                      pharmacies: data.pharmacies,
+                      maxInline: _kInlinePharmacies,
+                      onSeeAll: () => _openNearby(context),
+                    )
+                  else
+                    ShadButton.outline(
+                      width: double.infinity,
+                      onPressed: () => _openNearby(context),
+                      leading: const Icon(Icons.location_on_outlined, size: 18),
+                      child: const Text('Find nearby pharmacies'),
+                    ),
                   const SizedBox(height: 24),
                   ShadButton(
                     width: double.infinity,

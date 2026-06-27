@@ -1,3 +1,4 @@
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 /// A coarse device fix, used only to rank nearby pharmacies by distance.
@@ -34,6 +35,23 @@ class LocationService {
       return (lat: pos.latitude, lon: pos.longitude);
     } catch (_) {
       // Permanently denied, timed out, plugin unavailable (e.g. tests) — best-effort.
+      return null;
+    }
+  }
+
+  /// Resolve a typed address/place to coordinates via the OS geocoder (no API
+  /// key). Returns null if the address can't be found. Throws nothing the caller
+  /// must handle beyond null — keep the UI flow simple.
+  Future<LatLon?> geocode(String address) async {
+    final query = address.trim();
+    if (query.isEmpty) return null;
+    try {
+      final results = await locationFromAddress(query);
+      if (results.isEmpty) return null;
+      final first = results.first;
+      return (lat: first.latitude, lon: first.longitude);
+    } catch (_) {
+      // No match, or platform geocoder unavailable.
       return null;
     }
   }

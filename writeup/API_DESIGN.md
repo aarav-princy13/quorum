@@ -10,8 +10,13 @@
 - `POST /v1/analyze` — body `{items:[{name,qty}], location?:{lat,lon}}` → pipeline result
   (matches, savings, Schedule H/H1/X safety, nearby pharmacies). **Text only; the receipt
   image is OCR'd on-device and never sent.**
+- `POST /v1/nearby` — body `{location:{lat,lon}}` (required) → `{pharmacies:[...]}`. Backs the
+  address-entry flow (geocode an address on-device → query here) when no device GPS is available.
+  Same HMAC auth/rate-limit as analyze; signs its own path.
+- Both rank pharmacies within a `NEARBY_MAX_KM` (50 km) radius — a far-away catalogue row is never
+  returned as "nearby" (e.g. a US point yields an empty list against the India-only data).
 - `GET /v1/health` — `{"status":"ok"}`, nothing else.
-- Everything else → 404. POST-only on analyze, JSON-only.
+- Everything else → 404. POST-only on analyze/nearby, JSON-only.
 
 ## Decisions (owner, 2026-06-25)
 - **Auth = API key + HMAC request signing.**

@@ -48,22 +48,43 @@ class B2gApi {
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
+  static const String _nearbyPath = '/v1/nearby';
+
+  /// Scan a receipt's line items. Location is optional; when given, the server
+  /// distance-ranks nearby pharmacies in the response.
   Future<AnalyzeResponse> analyze(List<LineItem> items, {double? lat, double? lon}) async {
+    final json = await _signedPost(_path, {
+      'items': items.map((e) => e.toJson()).toList(),
+      if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
+    });
+    return AnalyzeResponse.fromJson(json);
+  }
+
+  /// Look up pharmacies near a point (used by the address-entry flow). The server
+  /// distance-ranks within a sane radius, so a far-away catalogue is empty here.
+  Future<List<Pharmacy>> nearby({required double lat, required double lon}) async {
+    final json = await _signedPost(_nearbyPath, {
+      'location': {'lat': lat, 'lon': lon},
+    });
+    return ((json['pharmacies'] as List?) ?? const [])
+        .map((p) => Pharmacy.fromJson(p as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Sign and POST [payload] to [path], returning the decoded JSON object. Shared
+  /// by analyze + nearby so the HMAC scheme is defined once.
+  Future<Map<String, dynamic>> _signedPost(String path, Map<String, dynamic> payload) async {
     if (!ApiConfig.isConfigured) {
       throw ApiException('Backend not configured — set B2G_API_URL/KEY/SECRET.');
     }
 
-    final payload = <String, dynamic>{
-      'items': items.map((e) => e.toJson()).toList(),
-      if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
-    };
     final body = utf8.encode(jsonEncode(payload));
     final ts = (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString();
     final nonce = _nonce();
-    final canonical = b2gCanonical('POST', _path, ts, nonce, body);
+    final canonical = b2gCanonical('POST', path, ts, nonce, body);
     final signature = b2gSign(b2gHexToBytes(ApiConfig.apiSecretHex), canonical);
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}$_path');
+    final uri = Uri.parse('${ApiConfig.baseUrl}$path');
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 20)
       ..badCertificateCallback = (cert, host, port) => ApiConfig.allowSelfSignedCert;
@@ -84,7 +105,7 @@ class B2gApi {
       if (resp.statusCode != 200) {
         throw ApiException(_friendly(resp.statusCode, text), statusCode: resp.statusCode);
       }
-      return AnalyzeResponse.fromJson(jsonDecode(text) as Map<String, dynamic>);
+      return jsonDecode(text) as Map<String, dynamic>;
     } on SocketException catch (e) {
       throw ApiException(
           'Could not reach the server. Is it running and on the same Wi-Fi?\n${e.message}');

@@ -45,6 +45,7 @@ MAX_BODY = 16 * 1024        # 16 KB
 MAX_ITEMS = 50
 MAX_NAME = 120
 MAX_INFLIGHT = 32           # concurrent requests cap (DoS / CPU protection)
+NEARBY_MAX_KM = 50          # don't call a pharmacy 12000 km away "nearby"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 log = logging.getLogger("b2g.api")
@@ -79,16 +80,29 @@ def validate_payload(obj):
         if not isinstance(qty, int) or isinstance(qty, bool) or not (1 <= qty <= 99):
             raise ValueError("item.qty must be an int 1..99")
         clean.append({"name": name, "qty": qty})
-    location = None
     loc = obj.get("location")
-    if loc is not None:
-        if not isinstance(loc, dict) or not _isnum(loc.get("lat")) or not _isnum(loc.get("lon")):
-            raise ValueError("location must be {lat,lon} numbers")
-        lat, lon = float(loc["lat"]), float(loc["lon"])
-        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-            raise ValueError("lat/lon out of range")
-        location = (lat, lon)
+    location = _parse_location(loc) if loc is not None else None
     return clean, location
+
+
+def _parse_location(loc):
+    """Validate a {lat,lon} object into a (lat, lon) float tuple."""
+    if not isinstance(loc, dict) or not _isnum(loc.get("lat")) or not _isnum(loc.get("lon")):
+        raise ValueError("location must be {lat,lon} numbers")
+    lat, lon = float(loc["lat"]), float(loc["lon"])
+    if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+        raise ValueError("lat/lon out of range")
+    return (lat, lon)
+
+
+def validate_nearby(obj):
+    """Validate the /v1/nearby body. Location is required here. Returns (lat, lon)."""
+    if not isinstance(obj, dict):
+        raise ValueError("body must be an object")
+    loc = obj.get("location")
+    if loc is None:
+        raise ValueError("location is required")
+    return _parse_location(loc)
 
 
 def _ro_conn():
@@ -155,7 +169,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         t0 = time.time()
-        if self.path != "/v1/analyze":
+        if self.path not in ("/v1/analyze", "/v1/nearby"):
             self._send(404, {"error": "not found"})
             return self._audit(404, t0)
 
@@ -187,19 +201,29 @@ class Handler(BaseHTTPRequestHandler):
 
             try:
                 obj = json.loads(body.decode("utf-8"))
-                items, location = validate_payload(obj)
+                if self.path == "/v1/analyze":
+                    items, location = validate_payload(obj)
+                else:                                      # /v1/nearby
+                    location = validate_nearby(obj)
             except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
                 self._send(400, {"error": "invalid payload"})
                 return self._audit(400, t0, "validate", keyid)
 
             conn = _ro_conn()
             try:
-                result = process_receipt(conn, items)
-                pharmacies = (nearby_pharmacies(conn, lat=location[0], lon=location[1])
-                              if location else [])
+                if self.path == "/v1/analyze":
+                    result = process_receipt(conn, items)
+                    pharmacies = (nearby_pharmacies(conn, lat=location[0], lon=location[1],
+                                                    max_km=NEARBY_MAX_KM)
+                                  if location else [])
+                    payload = {"result": result, "pharmacies": pharmacies}
+                else:                                      # /v1/nearby
+                    pharmacies = nearby_pharmacies(conn, lat=location[0], lon=location[1],
+                                                   max_km=NEARBY_MAX_KM)
+                    payload = {"pharmacies": pharmacies}
             finally:
                 conn.close()
-            self._send(200, {"result": result, "pharmacies": pharmacies})
+            self._send(200, payload)
             self._audit(200, t0, "", keyid)
         except Exception:                              # never leak internals
             log.exception("unhandled error")           # server-side only

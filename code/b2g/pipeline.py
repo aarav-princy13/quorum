@@ -58,12 +58,14 @@ def process_receipt(conn, line_items):
     return {"items": items, "summary": summary}
 
 
-def nearby_pharmacies(conn, lat=None, lon=None, limit=8, kinds=None):
+def nearby_pharmacies(conn, lat=None, lon=None, limit=8, kinds=None, max_km=None):
     """Locations-only nearby lookup (no live inventory).
 
     Neutral: returns any nearby pharmacy. When lat/lon are given, ranks by real
     great-circle distance (km) and returns the closest `limit`; Jan Aushadhi
-    Kendras are tagged so the caller can highlight them.
+    Kendras are tagged so the caller can highlight them. `max_km`, when set,
+    drops anything farther than that radius so a far-away catalogue row is never
+    presented as "nearby".
     """
     from .util import haversine_km
 
@@ -79,5 +81,7 @@ def nearby_pharmacies(conn, lat=None, lon=None, limit=8, kinds=None):
             r["distance_km"] = (round(haversine_km(lat, lon, r["lat"], r["lon"]), 2)
                                 if r["lat"] is not None and r["lon"] is not None else None)
         rows = [r for r in rows if r["distance_km"] is not None]
+        if max_km is not None:
+            rows = [r for r in rows if r["distance_km"] <= max_km]
         rows.sort(key=lambda r: r["distance_km"])
     return rows[:limit]
