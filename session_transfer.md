@@ -148,7 +148,11 @@ Light default + full dark. Geist + Noto Devanagari. Dense bordered rows, no card
    Nearby screen has an **address search** box → `LocationService.geocode` → `B2gApi.nearby` →
    **`POST /v1/nearby`** (NEW endpoint, signed; body `{location}` → `{pharmacies}`). Both endpoints filter to
    `NEARBY_MAX_KM`=50 (the fallback radius; live OSM now returns real pharmacies globally incl. the US —
-   only drug PRICES remain India-only). iOS
+   only drug PRICES remain India-only). **Address autocomplete:** `POST /v1/geocode` (Photon/OSM, no key) →
+   debounced `AddressSearchField` (`lib/widgets/`) used in Nearby + the Settings location picker; selecting a
+   suggestion fetches pharmacies at its coords. **Saved location (persistent):** `LocationStore`
+   (`shared_preferences`, `lib/services/prefs/`) set in Settings → used as the analyze GPS-denied fallback.
+   Settings is now stateful (saved location reflects edits immediately, like the language checkmark fix). iOS
    `NSLocationWhenInUseUsageDescription` + Android COARSE/FINE perms added; Settings privacy note covers it.
    **Map view DONE:** Nearby has a **List/Map toggle** (`flutter_map` + OSM tiles, no API key; `latlong2`).
    `lib/widgets/pharmacy_map.dart` drops a pin per pharmacy (Jan Aushadhi = success colour) + an optional

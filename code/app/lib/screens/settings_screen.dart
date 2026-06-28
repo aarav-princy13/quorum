@@ -2,24 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../l10n/strings.dart';
+import '../services/api/b2g_api.dart';
+import '../services/prefs/location_store.dart';
 import '../theme/app_theme.dart';
 import '../theme/fonts.dart';
+import '../widgets/address_search_field.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
 
-/// Settings (DESIGN.md #6): appearance, language, privacy, about. Theme + language
-/// are owned by the app shell and threaded in so this screen stays stateless.
-class SettingsScreen extends StatelessWidget {
+/// Settings (DESIGN.md #6): appearance, language, location, privacy, about.
+/// Theme + language are owned by the app shell; the saved location is persisted
+/// (held locally too, so an edit reflects immediately on this pushed route).
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     this.onToggleTheme,
     this.themeLabel,
     this.onSetHindi,
+    this.savedLocation,
+    this.onSetSavedLocation,
   });
 
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
   final ValueChanged<bool>? onSetHindi;
+  final SavedLocation? savedLocation;
+  final ValueChanged<SavedLocation?>? onSetSavedLocation;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late SavedLocation? _saved = widget.savedLocation;
+
+  Future<void> _editLocation() async {
+    final picked = await Navigator.of(context).push<GeocodeSuggestion>(
+      MaterialPageRoute(builder: (_) => const _LocationPickerScreen()),
+    );
+    if (picked == null) return;
+    final loc = SavedLocation(label: picked.label, lat: picked.lat, lon: picked.lon);
+    widget.onSetSavedLocation?.call(loc);
+    setState(() => _saved = loc);
+  }
+
+  void _clearLocation() {
+    widget.onSetSavedLocation?.call(null);
+    setState(() => _saved = null);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
     Widget langRow(String title, bool isHindi) => _Row(
           icon: Icons.translate_outlined,
           title: title,
-          onTap: onSetHindi == null ? null : () => onSetHindi!(isHindi),
+          onTap: widget.onSetHindi == null ? null : () => widget.onSetHindi!(isHindi),
           trailing: hi == isHindi
               ? Icon(Icons.check, size: 18, color: c.primary)
               : null,
@@ -54,12 +84,12 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.brightness_6_outlined,
                     title: s.theme,
                     subtitle: s.themeSubtitle,
-                    trailing: onToggleTheme == null
+                    trailing: widget.onToggleTheme == null
                         ? null
                         : ShadButton.outline(
                             size: ShadButtonSize.sm,
-                            onPressed: onToggleTheme,
-                            child: Text(themeLabel ?? 'Auto'),
+                            onPressed: widget.onToggleTheme,
+                            child: Text(widget.themeLabel ?? 'Auto'),
                           ),
                   ),
                   const SizedBox(height: 22),
@@ -67,6 +97,36 @@ class SettingsScreen extends StatelessWidget {
                   const SizedBox(height: 6),
                   langRow('English', false),
                   langRow('हिन्दी', true),
+                  const SizedBox(height: 22),
+                  SectionLabel(s.location),
+                  const SizedBox(height: 6),
+                  _Row(
+                    icon: Icons.location_on_outlined,
+                    title: _saved?.label ?? s.setLocation,
+                    subtitle: _saved == null ? s.locationNotSet : null,
+                    onTap: _editLocation,
+                    trailing: _saved == null
+                        ? Icon(Icons.chevron_right, size: 18, color: c.textMuted)
+                        : ShadButton.ghost(
+                            size: ShadButtonSize.sm,
+                            onPressed: _clearLocation,
+                            child: Text(s.clear),
+                          ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Text(
+                      s.locationSettingHint,
+                      style: TextStyle(
+                        fontFamily: AppFonts.family,
+                        fontFamilyFallback: AppFonts.fallback,
+                        fontSize: 11,
+                        height: 1.4,
+                        color: c.textMuted,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 22),
                   SectionLabel(s.privacy),
                   const SizedBox(height: 6),
@@ -195,6 +255,37 @@ class _InfoBlock extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Address picker: a typeahead that pops with the chosen [GeocodeSuggestion].
+class _LocationPickerScreen extends StatelessWidget {
+  const _LocationPickerScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return ColoredBox(
+      color: c.surface0,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ScreenHeader(
+              title: context.s.setLocation,
+              onBack: () => Navigator.of(context).maybePop(),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+              child: AddressSearchField(
+                autofocus: true,
+                onSelected: (s) => Navigator.of(context).pop(s),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

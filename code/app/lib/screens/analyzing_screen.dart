@@ -8,6 +8,7 @@ import '../l10n/strings.dart';
 import '../services/api/b2g_api.dart';
 import '../services/location/location_service.dart';
 import '../services/ocr/ocr_engine.dart';
+import '../services/prefs/location_store.dart';
 import '../services/parser/receipt_parser.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
@@ -19,10 +20,18 @@ import '../theme/fonts.dart';
 /// on the device; only extracted text is sent. If the backend isn't configured
 /// or reachable, it falls back to showing the recognized text.
 class AnalyzingScreen extends StatefulWidget {
-  const AnalyzingScreen({super.key, required this.imagePath, required this.ocr});
+  const AnalyzingScreen({
+    super.key,
+    required this.imagePath,
+    required this.ocr,
+    this.fallbackLocation,
+  });
 
   final String imagePath;
   final OcrEngine ocr;
+
+  /// Used to rank nearby pharmacies when device GPS is off/denied (saved in Settings).
+  final SavedLocation? fallbackLocation;
 
   @override
   State<AnalyzingScreen> createState() => _AnalyzingScreenState();
@@ -94,9 +103,13 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
     // 2) Match via the backend. Location is best-effort: if we have a fix, the
     // server ranks pharmacies by distance; if not, it simply omits them.
     setState(() => _phase = _Phase.matching);
-    final loc = await _locationFuture;
+    // Prefer a live GPS fix; otherwise fall back to the saved location (Settings).
+    final gps = await _locationFuture;
+    final fb = widget.fallbackLocation;
+    final lat = gps?.lat ?? fb?.lat;
+    final lon = gps?.lon ?? fb?.lon;
     try {
-      final resp = await _api.analyze(items, lat: loc?.lat, lon: loc?.lon);
+      final resp = await _api.analyze(items, lat: lat, lon: lon);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(

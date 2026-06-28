@@ -18,8 +18,10 @@
   `pharmacies` snapshot table (`nearby_pharmacies`, `NEARBY_MAX_KM`=50) only if Overpass errors. The
   query host is fixed and built from validated numeric coords (SSRF-safe); user coords go to OSM to find
   nearby (inherent), the receipt image never does. Prototype-grade — production wants a managed Places API.
+- `POST /v1/geocode` — body `{q}` → `{results:[{label,lat,lon}]}`. Address autocomplete backing the
+  typeahead, via **Photon** (OSM, no API key), cached; returns `[]` for `<3` chars or on upstream error.
 - `GET /v1/health` — `{"status":"ok"}`, nothing else.
-- Everything else → 404. POST-only on analyze/nearby, JSON-only.
+- Everything else → 404. POST-only on analyze/nearby/geocode, JSON-only.
 
 ## Decisions (owner, 2026-06-25)
 - **Auth = API key + HMAC request signing.**

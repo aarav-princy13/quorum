@@ -4,6 +4,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import 'l10n/strings.dart';
 import 'screens/capture_screen.dart';
 import 'services/ocr/ocr_engine.dart';
+import 'services/prefs/location_store.dart';
 import 'theme/app_theme.dart';
 
 void main() => runApp(const BrandToGenericApp());
@@ -32,8 +33,23 @@ class _BrandToGenericAppState extends State<BrandToGenericApp> {
   ThemeMode _mode = ThemeMode.system;
   bool _hi = false; // false = English, true = Hindi
   final OcrEngine _ocr = createOcrEngine();
+  final LocationStore _locationStore = LocationStore();
+  SavedLocation? _saved;
+
+  @override
+  void initState() {
+    super.initState();
+    _locationStore.load().then((v) {
+      if (mounted && v != null) setState(() => _saved = v);
+    });
+  }
 
   void _setHindi(bool hi) => setState(() => _hi = hi);
+
+  Future<void> _setSaved(SavedLocation? v) async {
+    v == null ? await _locationStore.clear() : await _locationStore.save(v);
+    if (mounted) setState(() => _saved = v);
+  }
 
   void _cycleTheme() {
     setState(() {
@@ -68,6 +84,8 @@ class _BrandToGenericAppState extends State<BrandToGenericApp> {
         onToggleTheme: _cycleTheme,
         themeLabel: _themeLabel,
         onSetHindi: _setHindi,
+        savedLocation: _saved,
+        onSetSavedLocation: _setSaved,
       ),
     );
   }

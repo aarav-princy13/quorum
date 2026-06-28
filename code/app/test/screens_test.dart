@@ -10,6 +10,7 @@ import 'package:brand_to_generic/services/api/b2g_api.dart';
 import 'package:brand_to_generic/screens/item_detail_screen.dart';
 import 'package:brand_to_generic/screens/nearby_screen.dart';
 import 'package:brand_to_generic/screens/settings_screen.dart';
+import 'package:brand_to_generic/services/prefs/location_store.dart';
 import 'package:brand_to_generic/l10n/strings.dart';
 import 'package:brand_to_generic/theme/app_theme.dart';
 import 'package:brand_to_generic/widgets/pharmacy_map.dart';
@@ -168,6 +169,25 @@ void main() {
     final engY = tester.getCenter(find.text('English')).dy;
     expect((checkY - hindiY).abs() < (checkY - engY).abs(), isTrue,
         reason: 'checkmark should be on the हिन्दी row, not English');
+  });
+
+  testWidgets('settings shows a saved location and can clear it', (tester) async {
+    SavedLocation? cleared = const SavedLocation(label: 'x', lat: 0, lon: 0);
+    await tester.pumpWidget(_host(
+      SettingsScreen(
+        savedLocation:
+            const SavedLocation(label: 'Sector 17, Chandigarh', lat: 30.74, lon: 76.78),
+        onSetSavedLocation: (v) => cleared = v,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sector 17, Chandigarh'), findsOneWidget);
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+    expect(cleared, isNull); // clear persists null via the callback
+    expect(find.text('Sector 17, Chandigarh'), findsNothing);
+    expect(find.text('Set your location'), findsOneWidget);
   });
 
   testWidgets('settings renders in Hindi when the locale is Hindi', (tester) async {

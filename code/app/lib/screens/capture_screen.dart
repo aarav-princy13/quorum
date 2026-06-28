@@ -5,6 +5,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 import '../data/sample_result.dart';
 import '../l10n/strings.dart';
 import '../services/ocr/ocr_engine.dart';
+import '../services/prefs/location_store.dart';
 import '../theme/app_theme.dart';
 import '../theme/fonts.dart';
 import 'analyzing_screen.dart';
@@ -20,12 +21,16 @@ class CaptureScreen extends StatelessWidget {
     this.onToggleTheme,
     this.themeLabel,
     this.onSetHindi,
+    this.savedLocation,
+    this.onSetSavedLocation,
   });
 
   final OcrEngine ocr;
   final VoidCallback? onToggleTheme;
   final String? themeLabel;
   final ValueChanged<bool>? onSetHindi;
+  final SavedLocation? savedLocation;
+  final ValueChanged<SavedLocation?>? onSetSavedLocation;
 
   Future<void> _capture(BuildContext context, ImageSource source) async {
     final picker = ImagePicker();
@@ -43,7 +48,10 @@ class CaptureScreen extends StatelessWidget {
     if (file == null || !context.mounted) return;
     final path = file.path;
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AnalyzingScreen(imagePath: path, ocr: ocr)),
+      MaterialPageRoute(
+        builder: (_) =>
+            AnalyzingScreen(imagePath: path, ocr: ocr, fallbackLocation: savedLocation),
+      ),
     );
   }
 
@@ -92,6 +100,8 @@ class CaptureScreen extends StatelessWidget {
                           onToggleTheme: onToggleTheme,
                           themeLabel: themeLabel,
                           onSetHindi: onSetHindi,
+                          savedLocation: savedLocation,
+                          onSetSavedLocation: onSetSavedLocation,
                         ),
                       ),
                     ),
