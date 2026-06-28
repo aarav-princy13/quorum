@@ -63,7 +63,11 @@ inference. Surface per-call timing; (stretch) side-by-side vs a GPU provider.
 4. [DONE] Live-verified the quorum on real Gemma (verdicts strong — see status).
 5. [DONE] Opt-in Cerebras VLM OCR (`code/b2g/vlm_ocr.py`) + end-to-end `code/scan_demo.py` (image→OCR→matcher→quorum).
 6. [DONE] Live-verified VLM OCR + full pipeline on pharm_5 (see status). Lenses tuned + calibrated.
-7. [NEXT] Wire quorum + VLM OCR into `server.py` + Flutter Results; record 60s demo (pharm_5 is the hero case).
+7. [DONE] Backend: opt-in `verify` flag on `/v1/analyze` runs the quorum (gated on key); client_example shows it.
+8. [DONE] Flutter: Quorum model + `analyze(verify:true)` + verdict chip on Results rows + callout (confidence,
+   reasoning, flags, "Gemma 4 on Cerebras" attribution) on Item detail. `flutter analyze` clean, tests green.
+9. [NEXT] Decide: also add opt-in *cloud OCR* in the app (Gemma vision) so the app flow shows Gemma multimodal
+   too? (Today the APP uses on-device OCR; Gemma vision is exercised by the CLI `scan_demo`.) Then record 60s video.
 
 ## Status (2026-06-28)
 **Quorum LIVE-VERIFIED.** Real `gemma-4-31b` results: warfarin → caution (clinical lens cited INR monitoring);
