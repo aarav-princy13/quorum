@@ -57,8 +57,15 @@ most cautious lens; flags = union; confidence pulled down by dissent. Patient-fa
 inference. Surface per-call timing; (stretch) side-by-side vs a GPU provider.
 
 ## Build order
-1. `code/b2g/cerebras.py` — stdlib urllib client (text+image, structured outputs, reasoning, timing) + mock.
-2. `code/b2g/quorum.py` — lenses, NTI list, risk gate, parallel fan-out (ThreadPoolExecutor), ratchet merge.
-3. `code/quorum_demo.py` — run matcher on a sample receipt → quorum on risky items → report. (mock or live)
-4. Wire into `server.py` (`/v1/analyze?verify=1` or new route) + Flutter Results badges.
-5. Opt-in Cerebras VLM OCR path + a 60s demo.
+1. [DONE] `code/b2g/cerebras.py` — stdlib urllib client (text+image, structured outputs, reasoning, timing).
+2. [DONE] `code/b2g/quorum.py` — lenses, NTI list, risk gate, parallel fan-out (threads), ratchet merge + mock.
+3. [DONE] `code/quorum_demo.py` — matcher → quorum → report (auto live/mock). Mock verified on the real 248k DB.
+4. [NEXT] Live-verify the quorum on real Gemma, tune lens prompts.
+5. Wire into `server.py` (`/v1/analyze?verify=1` or new route) + Flutter Results badges.
+6. Opt-in Cerebras VLM OCR path + a 60s demo.
+
+## Status (2026-06-28)
+Steps 1–3 done + committed (`c7ac6d1`). Mock run on the real DB already catches: **warfarin → NTI caution**,
+**Glycomet 500 → fuzzy-matched to Glycomet 500 *SR* → modified-release + fuzzy caution** (IR≠SR), and exact Rx
+matches → "safe to switch" + prescription-only reminder (Pan/Telma ~85–88% savings). Existing test suites green.
+Awaiting a LIVE run to confirm real Gemma reproduces these catches before wiring into server/app.
