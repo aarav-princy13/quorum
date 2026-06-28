@@ -66,8 +66,15 @@ inference. Surface per-call timing; (stretch) side-by-side vs a GPU provider.
 7. [DONE] Backend: opt-in `verify` flag on `/v1/analyze` runs the quorum (gated on key); client_example shows it.
 8. [DONE] Flutter: Quorum model + `analyze(verify:true)` + verdict chip on Results rows + callout (confidence,
    reasoning, flags, "Gemma 4 on Cerebras" attribution) on Item detail. `flutter analyze` clean, tests green.
-9. [NEXT] Decide: also add opt-in *cloud OCR* in the app (Gemma vision) so the app flow shows Gemma multimodal
-   too? (Today the APP uses on-device OCR; Gemma vision is exercised by the CLI `scan_demo`.) Then record 60s video.
+9. [DONE] Opt-in cloud OCR in the app: server `POST /v1/scan` (Gemma 4 vision, 6MB image cap) + app
+   "Cloud scan (Gemma 4)" button (downscales upload; default camera/gallery stay on-device). So the APP flow
+   now shows BOTH Gemma multimodal (vision OCR) AND multi-agent (quorum) + speed. CLI `scan_client.py` tests it.
+10. [NEXT] Record the ≤60s demo video (app cloud scan on a real bill is the hero), then submit Tracks 1 (+3).
+
+## Demo paths (all live-validated end to end)
+- **App, cloud scan:** photo → upload → Gemma 4 vision OCR → matcher → Safety Quorum → Results chips + Item-detail callout.
+- **App, on-device:** camera/gallery → Apple Vision OCR (private) → `/v1/analyze?verify` → quorum verdicts.
+- **CLI:** `scan_demo.py pharm_5` (Gemma vision) · `quorum_demo.py` (committee on text) · `scan_client.py`/`client_example.py` (signed API).
 
 ## Status (2026-06-28)
 **Quorum LIVE-VERIFIED.** Real `gemma-4-31b` results: warfarin → caution (clinical lens cited INR monitoring);
