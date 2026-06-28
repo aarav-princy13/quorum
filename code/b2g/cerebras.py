@@ -115,6 +115,10 @@ def extract_json(text):
     """Pull the first JSON object from a reply (tolerates fences / stray prose)."""
     if not text:
         raise ValueError("empty reply")
+    # With reasoning on, some models prepend a <think>…</think> block — drop it so
+    # a stray '{' in the reasoning can't derail parsing of the real JSON answer.
+    if "</think>" in text:
+        text = text.rsplit("</think>", 1)[-1]
     start, end = text.find("{"), text.rfind("}")
     if start == -1 or end <= start:
         raise ValueError(f"no JSON object in reply: {text[:80]!r}")

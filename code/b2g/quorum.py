@@ -103,6 +103,10 @@ LENSES = [
 
 _ORDER = {"ok": 0, "caution": 1, "reject": 2}
 
+# Reasoning effort for the committee lenses (clinical judgment benefits from it).
+# Stays reproducible at temperature 0. OCR keeps reasoning off (extraction, speed).
+COMMITTEE_REASONING = "low"
+
 
 def _facts(item):
     m = item["matched"]
@@ -247,7 +251,8 @@ def verify_result(result, complete, max_item_workers=4):
 def make_complete(mock=False):
     """Return complete(messages, schema, tag) -> (text, meta)."""
     if not mock:
-        return lambda messages, schema, tag: cerebras.complete(messages, schema=schema)
+        return lambda messages, schema, tag: cerebras.complete(
+            messages, schema=schema, reasoning_effort=COMMITTEE_REASONING)
     return _mock_complete
 
 
