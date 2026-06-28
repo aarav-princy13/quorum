@@ -34,6 +34,7 @@ ROOT = CODE_DIR.parent
 from b2g.pipeline import process_receipt, nearby_pharmacies   # noqa: E402
 from b2g.places import osm_nearby, geocode_search             # noqa: E402
 from b2g.security import load_keys, verify_request, NonceCache, TokenBucket  # noqa: E402
+from b2g import cerebras, quorum                              # noqa: E402  (Safety Quorum)
 
 DB_PATH = os.environ.get("B2G_DB", str(ROOT / "data" / "b2g.db"))
 HOST = os.environ.get("B2G_HOST", "127.0.0.1")
@@ -86,7 +87,8 @@ def validate_payload(obj):
         clean.append(item)
     loc = obj.get("location")
     location = _parse_location(loc) if loc is not None else None
-    return clean, location
+    verify = bool(obj.get("verify"))            # opt-in Safety Quorum (cloud LLM calls)
+    return clean, location, verify
 
 
 def _parse_location(loc):
@@ -227,7 +229,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 obj = json.loads(body.decode("utf-8"))
                 if self.path == "/v1/analyze":
-                    items, location = validate_payload(obj)
+                    items, location, verify = validate_payload(obj)
                 elif self.path == "/v1/nearby":
                     location = validate_nearby(obj)
                 else:                                      # /v1/geocode
@@ -245,6 +247,10 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if self.path == "/v1/analyze":
                     result = process_receipt(conn, items)
+                    # Opt-in Safety Quorum: verify substitutions with Gemma 4 on Cerebras.
+                    # Only drug TEXT is sent (the receipt image already stays on-device).
+                    if verify and cerebras.have_key():
+                        quorum.verify_result(result, quorum.make_complete(mock=False))
                     pharmacies = _nearby(conn, location) if location else []
                     payload = {"result": result, "pharmacies": pharmacies}
                 else:                                      # /v1/nearby

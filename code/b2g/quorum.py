@@ -220,20 +220,24 @@ def _auto_pass(item):
     }
 
 
-def verify_result(result, complete):
-    """Attach a `quorum` block to every item; return per-run quorum stats."""
-    n_verified = n_flagged = 0
-    for item in result.get("items", []):
+def verify_result(result, complete, max_item_workers=4):
+    """Attach a `quorum` block to every item. Risky items are verified CONCURRENTLY
+    (each item's 4 lenses already run in parallel) so a whole bill resolves in seconds."""
+    items = result.get("items", [])
+    risky = []
+    for item in items:
         if is_risky(item):
-            q = run_item(item, complete)
-            n_verified += 1
-            if q["verdict"] != "ok":
-                n_flagged += 1
+            risky.append(item)
         else:
-            q = _auto_pass(item)
-        item["quorum"] = q
+            item["quorum"] = _auto_pass(item)
+    if risky:
+        with futures.ThreadPoolExecutor(max_workers=min(max_item_workers, len(risky))) as ex:
+            fut_to_item = {ex.submit(run_item, it, complete): it for it in risky}
+            for fut in futures.as_completed(fut_to_item):
+                fut_to_item[fut]["quorum"] = fut.result()
+    n_flagged = sum(1 for it in risky if it["quorum"]["verdict"] != "ok")
     result.setdefault("summary", {}).update(
-        {"quorum_verified": n_verified, "quorum_flagged": n_flagged})
+        {"quorum_verified": len(risky), "quorum_flagged": n_flagged})
     return result
 
 

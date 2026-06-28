@@ -44,9 +44,11 @@ def main():
     names = sys.argv[1:] or SAMPLE
     keyid, secret = load_dev_key()
 
+    verify = os.environ.get("B2G_VERIFY", "1") != "0"    # opt-in Safety Quorum (B2G_VERIFY=0 to skip)
     payload = {
         "items": [{"name": n, "qty": 1} for n in names],
         "location": {"lat": 30.7411, "lon": 76.7820},   # Chandigarh, Sector 17
+        "verify": verify,
     }
     body = json.dumps(payload).encode("utf-8")
     ts = int(time.time())
@@ -74,6 +76,11 @@ def main():
         tag = " ✓JanAushadhi" if (ch and ch.get("is_authoritative")) else ""
         print(f"  • {it['query']}: {it['matched']['salt']} {it['matched']['strength']} "
               f"-> cheapest {('₹%.2f/unit' % ch['unit_price']) if ch else 'n/a'}{tag}")
+        q = it.get("quorum")
+        if q:
+            flags = (" [" + ", ".join(q["flags"]) + "]") if q.get("flags") else ""
+            print(f"      quorum: {q['label']} ({q.get('overall_confidence')}%, "
+                  f"{q['verdict']}){flags}")
     print(f"  nearby pharmacies: {len(out['pharmacies'])}")
 
 
