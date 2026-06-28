@@ -34,7 +34,7 @@ ROOT = CODE_DIR.parent
 from b2g.pipeline import process_receipt, nearby_pharmacies   # noqa: E402
 from b2g.places import osm_nearby, geocode_search             # noqa: E402
 from b2g.security import load_keys, verify_request, NonceCache, TokenBucket  # noqa: E402
-from b2g import cerebras, quorum                              # noqa: E402  (Safety Quorum)
+from b2g import cerebras, quorum, vlm_ocr                     # noqa: E402  (Safety Quorum + cloud OCR)
 
 DB_PATH = os.environ.get("B2G_DB", str(ROOT / "data" / "b2g.db"))
 HOST = os.environ.get("B2G_HOST", "127.0.0.1")
@@ -43,7 +43,8 @@ CERT = os.environ.get("B2G_TLS_CERT", str(ROOT / "secrets" / "dev-cert.pem"))
 KEYFILE = os.environ.get("B2G_TLS_KEY", str(ROOT / "secrets" / "dev-key.pem"))
 KEYS_FILE = os.environ.get("B2G_KEYS", str(ROOT / "secrets" / "keys.json"))
 
-MAX_BODY = 16 * 1024        # 16 KB
+MAX_BODY = 16 * 1024        # 16 KB (text endpoints)
+SCAN_MAX_BODY = 6 * 1024 * 1024   # 6 MB — /v1/scan carries a base64 receipt image
 MAX_ITEMS = 50
 MAX_NAME = 120
 MAX_INFLIGHT = 32           # concurrent requests cap (DoS / CPU protection)
@@ -121,6 +122,22 @@ def validate_geocode(obj):
     return q
 
 
+def validate_scan(obj):
+    """Validate the /v1/scan body (opt-in cloud OCR). Returns (image_b64, mime, location, verify)."""
+    if not isinstance(obj, dict):
+        raise ValueError("body must be an object")
+    img = obj.get("image")
+    if not isinstance(img, str) or not (16 <= len(img) <= SCAN_MAX_BODY):
+        raise ValueError("image must be a base64 string")
+    mime = obj.get("mime", "image/jpeg")
+    if mime not in ("image/jpeg", "image/png", "image/webp"):
+        raise ValueError("unsupported image mime")
+    loc = obj.get("location")
+    location = _parse_location(loc) if loc is not None else None
+    verify = bool(obj.get("verify", True))
+    return img, mime, location, verify
+
+
 def _nearby(conn, location):
     """Pharmacies near a (lat, lon). Live OpenStreetMap is the source of truth (real,
     current, global); on an Overpass error we fall back to the local snapshot table.
@@ -170,7 +187,7 @@ class Handler(BaseHTTPRequestHandler):
         log.info("%s %s %s key=%s ms=%d %s",
                  self.command, self.path, status, kid, int((time.time() - t0) * 1000), event)
 
-    def _read_body(self):
+    def _read_body(self, max_bytes=MAX_BODY):
         if self.headers.get("Transfer-Encoding"):
             return None, "chunked not supported"
         length = self.headers.get("Content-Length")
@@ -180,7 +197,7 @@ class Handler(BaseHTTPRequestHandler):
             n = int(length)
         except ValueError:
             return None, "bad length"
-        if n < 0 or n > MAX_BODY:
+        if n < 0 or n > max_bytes:
             return None, "too large"
         return self.rfile.read(n), None
 
@@ -196,7 +213,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         t0 = time.time()
-        if self.path not in ("/v1/analyze", "/v1/nearby", "/v1/geocode"):
+        if self.path not in ("/v1/analyze", "/v1/scan", "/v1/nearby", "/v1/geocode"):
             self._send(404, {"error": "not found"})
             return self._audit(404, t0)
 
@@ -210,7 +227,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(429, {"error": "rate limited"}, {"Retry-After": str(retry)})
                 return self._audit(429, t0, "ip_rate")
 
-            body, err = self._read_body()
+            max_body = SCAN_MAX_BODY if self.path == "/v1/scan" else MAX_BODY
+            body, err = self._read_body(max_body)
             if err:
                 self._send(400, {"error": "bad request"})
                 return self._audit(400, t0, err)
@@ -230,6 +248,8 @@ class Handler(BaseHTTPRequestHandler):
                 obj = json.loads(body.decode("utf-8"))
                 if self.path == "/v1/analyze":
                     items, location, verify = validate_payload(obj)
+                elif self.path == "/v1/scan":
+                    image_b64, mime, location, verify = validate_scan(obj)
                 elif self.path == "/v1/nearby":
                     location = validate_nearby(obj)
                 else:                                      # /v1/geocode
@@ -243,6 +263,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, {"results": results})
                 return self._audit(200, t0, "", keyid)
 
+            if self.path == "/v1/scan" and not cerebras.have_key():
+                self._send(503, {"error": "cloud OCR unavailable"})
+                return self._audit(503, t0, "no_key", keyid)
+
             conn = _ro_conn()
             try:
                 if self.path == "/v1/analyze":
@@ -255,6 +279,18 @@ class Handler(BaseHTTPRequestHandler):
                         log.info("verify requested but CEREBRAS_API_KEY not set; quorum skipped")
                     pharmacies = _nearby(conn, location) if location else []
                     payload = {"result": result, "pharmacies": pharmacies}
+                elif self.path == "/v1/scan":
+                    # OPT-IN cloud path: app uploaded the image to read with Gemma 4
+                    # vision (default flow keeps OCR on-device). Then match + verify.
+                    items, ocr_meta = vlm_ocr.ocr_receipt_b64(image_b64, mime)
+                    items = items[:MAX_ITEMS]
+                    result = process_receipt(conn, items)
+                    if verify:
+                        quorum.verify_result(result, quorum.make_complete(mock=False))
+                    pharmacies = _nearby(conn, location) if location else []
+                    payload = {"result": result, "pharmacies": pharmacies,
+                               "ocr": {"n_items": len(items),
+                                       "latency_s": ocr_meta.get("latency_s")}}
                 else:                                      # /v1/nearby
                     payload = {"pharmacies": _nearby(conn, location)}
             finally:

@@ -27,6 +27,11 @@ def have_key():
     return bool(os.environ.get(API_KEY_ENV))
 
 
+def image_part(b64, mime="image/jpeg"):
+    """OpenAI multimodal content part from an already-base64 image string."""
+    return {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+
+
 def encode_image(path):
     """Return an OpenAI multimodal content part for a local image file."""
     with open(path, "rb") as fh:
@@ -34,7 +39,7 @@ def encode_image(path):
     ext = (os.path.splitext(path)[1].lstrip(".") or "png").lower()
     if ext == "jpg":
         ext = "jpeg"
-    return {"type": "image_url", "image_url": {"url": f"data:image/{ext};base64,{data}"}}
+    return image_part(data, f"image/{ext}")
 
 
 def build_messages(system_prompt, user_text, image_part=None):

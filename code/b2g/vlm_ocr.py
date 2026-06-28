@@ -45,14 +45,23 @@ OCR_SYSTEM = (
 )
 
 
-def ocr_receipt(image_path, complete=None):
-    """Live: read an image with Gemma 4 vision. Returns (items, meta)."""
+def _ocr(image_part, complete=None):
+    """Run Gemma 4 vision over an image content part. Returns (items, meta)."""
     complete = complete or (lambda m, schema: cerebras.complete(m, schema=schema))
-    image_part = cerebras.encode_image(str(image_path))
     messages = cerebras.build_messages(
         OCR_SYSTEM, "Extract the medication line items from this receipt.", image_part)
     text, meta = complete(messages, RECEIPT_SCHEMA)
     return cerebras.extract_json(text).get("items", []), meta
+
+
+def ocr_receipt(image_path, complete=None):
+    """Live: read a local image file with Gemma 4 vision. Returns (items, meta)."""
+    return _ocr(cerebras.encode_image(str(image_path)), complete)
+
+
+def ocr_receipt_b64(b64, mime="image/jpeg", complete=None):
+    """Live: read a base64 image (e.g. uploaded by the app) with Gemma 4 vision."""
+    return _ocr(cerebras.image_part(b64, mime), complete)
 
 
 def gold_items(receipt_id):
