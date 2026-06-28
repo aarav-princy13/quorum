@@ -37,11 +37,13 @@ class CaptureScreen extends StatelessWidget {
     final picker = ImagePicker();
     XFile? file;
     try {
-      // Cloud upload is downscaled to keep it small; on-device OCR keeps full res.
+      // Cloud upload is downscaled to keep it small, but a dense receipt needs
+      // enough resolution for the small digits — 2200px wide keeps them legible
+      // while staying well under the 6 MB cap. On-device OCR keeps full res.
       file = await picker.pickImage(
         source: source,
-        imageQuality: cloud ? 80 : 100,
-        maxWidth: cloud ? 1600 : null,
+        imageQuality: cloud ? 85 : 100,
+        maxWidth: cloud ? 2200 : null,
       );
     } catch (e) {
       if (context.mounted) {

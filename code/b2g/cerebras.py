@@ -55,7 +55,11 @@ def build_messages(system_prompt, user_text, image_part=None):
 
 
 def complete(messages, schema=None, reasoning_effort="none",
-             temperature=0.2, model=MODEL_ID, max_tokens=MAX_OUTPUT_TOKENS, timeout=60):
+             temperature=0.0, model=MODEL_ID, max_tokens=MAX_OUTPUT_TOKENS, timeout=60):
+    # temperature=0: OCR and verification want the SAME answer every run. Sampling
+    # (temp>0) makes reads of a hard/blurry image vary run-to-run, which the fuzzy
+    # matcher then amplifies into different prices. Committee diversity comes from the
+    # distinct lens prompts, not from sampling, so 0 is correct there too.
     """One chat completion. Returns (text, meta).
 
     meta = {"usage", "time_info", "latency_s"}. Raises RuntimeError on HTTP error
