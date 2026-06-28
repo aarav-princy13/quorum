@@ -62,27 +62,43 @@ LENS_SCHEMA = {
 
 _RULE = ("\nReturn ONLY JSON: {\"verdict\":\"ok|caution|reject\",\"confidence\":0-100,"
          "\"flags\":[short tags],\"note\":\"one sentence\"}. You may NOT invent drug "
-         "facts; judge only what is given. Be conservative — when unsure, prefer caution.")
+         "facts; judge only what is given. Be conservative on REAL risks.")
+
+# Prepended to every lens so the committee judges the RIGHT question. The single
+# biggest failure mode is penalizing the (expected) brand-name change of a generic.
+_CONTEXT = (
+    "CONTEXT — how this system works: it helps patients find cheaper GENERIC equivalents. It maps the "
+    "scanned brand to its ACTIVE INGREDIENT(S) (salt) + strength + form, then recommends a cheaper "
+    "product with the SAME salt + strength + form. The recommended product is DELIBERATELY a DIFFERENT "
+    "brand — that is the entire point of generic substitution, so a different brand name is EXPECTED and "
+    "is NOT itself a problem. `match_type` shows how the scan was identified: exact/generic = direct; "
+    "alias = a curated brand→ingredient mapping (reliable); prefix/fuzzy = a heuristic guess (scrutinize). "
+    "Raise a concern ONLY for a real mismatch of ACTIVE INGREDIENT(S), STRENGTH, or ROUTE/FORM, or a "
+    "clinical switch-safety issue — NEVER merely because the brand names differ.\n\n"
+)
 
 LENSES = [
-    ("identity",
-     "You verify a scanned pharmacy line was correctly identified. Given the OCR text, the "
-     "matched product (salt, strength, form) and HOW it was matched (match_type: exact/generic/"
-     "prefix/alias/fuzzy), judge whether the identification is right. 'reject' if it looks wrong, "
-     "'caution' for shaky guesses (esp. fuzzy/alias on garbled text), 'ok' if confident." + _RULE),
-    ("formulation",
-     "You assess whether switching to the cheaper generic is safe by FORMULATION. Both share "
-     "salt+strength+form per the database. Consider modified-release (SR/ER/XR) interchange and "
-     "salt-form interchangeability (e.g. metoprolol succinate vs tartrate). Flag real concerns." + _RULE),
-    ("clinical",
-     "You assess CLINICAL switch-safety. Is the active ingredient a narrow-therapeutic-index drug "
-     "(warfarin, levothyroxine, phenytoin, carbamazepine, lithium, digoxin, tacrolimus, valproate, "
-     "etc.) where brand/generic switching should be doctor-supervised? Use 'caution' (not 'reject') "
-     "for NTI — the switch is allowed but supervised. Note prescription-only status if relevant." + _RULE),
-    ("skeptic",
-     "You are a skeptical pharmacist. Argue why this match or substitution could be WRONG or unsafe. "
-     "If you find a credible reason, use 'caution' or 'reject'; otherwise 'ok'. Default to caution "
-     "when genuinely unsure." + _RULE),
+    ("identity", _CONTEXT +
+     "You are the IDENTITY lens. Judge whether the scanned item was correctly identified as the stated "
+     "salt + strength + form. For exact/generic/alias, treat the ingredient mapping as reliable unless "
+     "the strength or form looks wrong. For prefix/fuzzy, scrutinize whether the scanned text plausibly "
+     "means THIS salt at THIS strength and THIS form/route. 'reject' for a clear ingredient/strength/"
+     "route error; 'caution' for a shaky guess; 'ok' otherwise. Do NOT penalize brand-name differences." + _RULE),
+    ("formulation", _CONTEXT +
+     "You are the FORMULATION lens. Flag: (a) a ROUTE/FORM mismatch between the scanned item and the "
+     "matched product (e.g. the scan looks like a tablet but the match is an injection); (b) modified-"
+     "release (SR/ER/XR) interchange; (c) salt-form interchangeability (e.g. metoprolol succinate vs "
+     "tartrate). Otherwise 'ok'." + _RULE),
+    ("clinical", _CONTEXT +
+     "You are the CLINICAL lens. Is the active ingredient narrow-therapeutic-index (warfarin, "
+     "levothyroxine, phenytoin, carbamazepine, lithium, digoxin, tacrolimus, valproate, methotrexate, "
+     "etc.) where switching should be doctor-supervised? Use 'caution' (not 'reject') for NTI. Note "
+     "prescription-only status if relevant. Do not flag brand-name differences." + _RULE),
+    ("skeptic", _CONTEXT +
+     "You are the SKEPTIC lens. Argue why the IDENTIFICATION or the SWITCH could be unsafe — focus on "
+     "active-ingredient / strength / route mismatches or clinical risks. Credible reason → 'caution' or "
+     "'reject'; otherwise 'ok'. Do NOT flag merely because the brand name differs — generics have "
+     "different brand names by design." + _RULE),
 ]
 
 _ORDER = {"ok": 0, "caution": 1, "reject": 2}
