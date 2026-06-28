@@ -60,12 +60,15 @@ inference. Surface per-call timing; (stretch) side-by-side vs a GPU provider.
 1. [DONE] `code/b2g/cerebras.py` — stdlib urllib client (text+image, structured outputs, reasoning, timing).
 2. [DONE] `code/b2g/quorum.py` — lenses, NTI list, risk gate, parallel fan-out (threads), ratchet merge + mock.
 3. [DONE] `code/quorum_demo.py` — matcher → quorum → report (auto live/mock). Mock verified on the real 248k DB.
-4. [NEXT] Live-verify the quorum on real Gemma, tune lens prompts.
-5. Wire into `server.py` (`/v1/analyze?verify=1` or new route) + Flutter Results badges.
-6. Opt-in Cerebras VLM OCR path + a 60s demo.
+4. [DONE] Live-verified the quorum on real Gemma (verdicts strong — see status).
+5. [DONE] Opt-in Cerebras VLM OCR (`code/b2g/vlm_ocr.py`) + end-to-end `code/scan_demo.py` (image→OCR→matcher→quorum).
+6. [NEXT] Live-verify VLM OCR on a real image (pharm_5); then wire into `server.py` + Flutter; record 60s demo.
 
 ## Status (2026-06-28)
-Steps 1–3 done + committed (`c7ac6d1`). Mock run on the real DB already catches: **warfarin → NTI caution**,
-**Glycomet 500 → fuzzy-matched to Glycomet 500 *SR* → modified-release + fuzzy caution** (IR≠SR), and exact Rx
-matches → "safe to switch" + prescription-only reminder (Pan/Telma ~85–88% savings). Existing test suites green.
-Awaiting a LIVE run to confirm real Gemma reproduces these catches before wiring into server/app.
+**Quorum LIVE-VERIFIED.** Real `gemma-4-31b` results: warfarin → caution (clinical lens cited INR monitoring);
+**Glycomet 500 → REJECT** (committee caught the IR→SR fuzzy-match: "not therapeutically interchangeable");
+exact Rx matches (HCQS/Pan/Telma) → "safe to switch" + Rx reminder. **Speed: 4 agents ~0.5s parallel vs ~1.7s
+sequential ≈ 3.4–3.6×.** End-to-end scan demo runs on pharm_5 (real RA bill) in mock; EYEMIST exercises the
+exact-OTC AUTO-PASS path; FOLITRAX 10MG exposed a prefix tablet→injection route mismatch to watch for live.
+Commits: quorum `c7ac6d1`, UA fix `bf7b594`, VLM OCR + scan demo `99e0b16`. Existing suites green.
+**Next action:** run `python3 code/scan_demo.py pharm_5` LIVE (real Gemma vision OCR + quorum).
