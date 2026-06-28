@@ -31,6 +31,17 @@ class S {
         'आपकी फ़ोटो आपके डिवाइस पर ही पढ़ी जाती है और कभी अपलोड नहीं होती — केवल टेक्स्ट इस्तेमाल होता है।',
       );
   String get viewSample => _('View sample results', 'नमूना परिणाम देखें');
+  String get cloudScan => _('Cloud scan (Gemma 4)', 'क्लाउड स्कैन (Gemma 4)');
+  String get cloudScanNote => _(
+        'Uploads the photo to read it with Gemma 4 on Cerebras — higher accuracy on messy bills.',
+        'फ़ोटो को Cerebras पर Gemma 4 से पढ़ने के लिए अपलोड करता है — जटिल बिलों पर अधिक सटीक।',
+      );
+  String get readingWithGemma =>
+      _('Reading with Gemma 4…', 'Gemma 4 से पढ़ा जा रहा है…');
+  String get uploadingNote => _(
+        'Uploading the photo to read it with Gemma 4 on Cerebras.',
+        'फ़ोटो को Cerebras पर Gemma 4 से पढ़ने के लिए अपलोड किया जा रहा है।',
+      );
   String cameraError(Object e) =>
       _('Could not open camera/gallery: $e', 'कैमरा/गैलरी नहीं खुल सका: $e');
 

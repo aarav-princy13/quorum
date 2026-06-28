@@ -63,6 +63,7 @@ class B2gApi {
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
+  static const String _scanPath = '/v1/scan';
   static const String _nearbyPath = '/v1/nearby';
   static const String _geocodePath = '/v1/geocode';
 
@@ -84,6 +85,20 @@ class B2gApi {
       'items': items.map((e) => e.toJson()).toList(),
       if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
       'verify': verify, // opt-in Safety Quorum (server runs it only if its key is set)
+    });
+    return AnalyzeResponse.fromJson(json);
+  }
+
+  /// OPT-IN cloud scan: upload the receipt image to be read by Gemma 4 vision on
+  /// Cerebras (server-side OCR), then matched + quorum-verified. Unlike [analyze],
+  /// this DOES send the photo — the caller must have told the user.
+  Future<AnalyzeResponse> scan(List<int> imageBytes,
+      {required String mime, double? lat, double? lon, bool verify = true}) async {
+    final json = await _signedPost(_scanPath, {
+      'image': base64Encode(imageBytes),
+      'mime': mime,
+      if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
+      'verify': verify,
     });
     return AnalyzeResponse.fromJson(json);
   }

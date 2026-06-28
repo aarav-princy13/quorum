@@ -32,11 +32,17 @@ class CaptureScreen extends StatelessWidget {
   final SavedLocation? savedLocation;
   final ValueChanged<SavedLocation?>? onSetSavedLocation;
 
-  Future<void> _capture(BuildContext context, ImageSource source) async {
+  Future<void> _capture(BuildContext context, ImageSource source,
+      {bool cloud = false}) async {
     final picker = ImagePicker();
     XFile? file;
     try {
-      file = await picker.pickImage(source: source, imageQuality: 100);
+      // Cloud upload is downscaled to keep it small; on-device OCR keeps full res.
+      file = await picker.pickImage(
+        source: source,
+        imageQuality: cloud ? 80 : 100,
+        maxWidth: cloud ? 1600 : null,
+      );
     } catch (e) {
       if (context.mounted) {
         ShadToaster.maybeOf(context)?.show(
@@ -49,8 +55,8 @@ class CaptureScreen extends StatelessWidget {
     final path = file.path;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            AnalyzingScreen(imagePath: path, ocr: ocr, fallbackLocation: savedLocation),
+        builder: (_) => AnalyzingScreen(
+            imagePath: path, ocr: ocr, fallbackLocation: savedLocation, cloud: cloud),
       ),
     );
   }
@@ -73,11 +79,12 @@ class CaptureScreen extends StatelessWidget {
     return ColoredBox(
       color: c.surface0,
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Row(
                 children: [
                   Expanded(
@@ -109,9 +116,8 @@ class CaptureScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 40),
+              Column(
                   children: [
                     Container(
                       width: 84,
@@ -148,7 +154,7 @@ class CaptureScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
+              const SizedBox(height: 32),
               ShadButton(
                 width: double.infinity,
                 onPressed: () => _capture(context, ImageSource.camera),
@@ -161,6 +167,21 @@ class CaptureScreen extends StatelessWidget {
                 onPressed: () => _capture(context, ImageSource.gallery),
                 leading: const Icon(Icons.photo_library_outlined, size: 18),
                 child: Text(context.s.chooseFromGallery),
+              ),
+              const SizedBox(height: 10),
+              ShadButton.outline(
+                width: double.infinity,
+                onPressed: () => _capture(context, ImageSource.gallery, cloud: true),
+                child: Text(context.s.cloudScan),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                context.s.cloudScanNote,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                  fontSize: 11, height: 1.4, color: c.textMuted,
+                ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -188,7 +209,8 @@ class CaptureScreen extends StatelessWidget {
                   child: Text(context.s.viewSample),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

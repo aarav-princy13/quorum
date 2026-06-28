@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -25,10 +27,15 @@ class AnalyzingScreen extends StatefulWidget {
     required this.imagePath,
     required this.ocr,
     this.fallbackLocation,
+    this.cloud = false,
   });
 
   final String imagePath;
   final OcrEngine ocr;
+
+  /// When true, OCR runs in the CLOUD (Gemma 4 vision via `/v1/scan`) — the photo
+  /// IS uploaded. Default false keeps OCR on-device (photo never leaves).
+  final bool cloud;
 
   /// Used to rank nearby pharmacies when device GPS is off/denied (saved in Settings).
   final SavedLocation? fallbackLocation;
@@ -59,6 +66,10 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   }
 
   Future<void> _run() async {
+    if (widget.cloud) {
+      await _runCloud();
+      return;
+    }
     // 1) OCR on-device
     setState(() => _phase = _Phase.reading);
     final sw = Stopwatch()..start();
@@ -129,6 +140,46 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
     }
   }
 
+  /// Opt-in cloud path: upload the image, Gemma 4 reads + matches + verifies it.
+  Future<void> _runCloud() async {
+    setState(() => _phase = _Phase.reading);
+    List<int> bytes;
+    try {
+      bytes = await File(widget.imagePath).readAsBytes();
+    } catch (e) {
+      if (mounted) setState(() { _error = '$e'; _phase = _Phase.error; });
+      return;
+    }
+    if (!mounted) return;
+    final gps = await _locationFuture;
+    final fb = widget.fallbackLocation;
+    try {
+      final resp = await _api.scan(bytes,
+          mime: _mimeFor(widget.imagePath),
+          lat: gps?.lat ?? fb?.lat, lon: gps?.lon ?? fb?.lon);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ResultsScreen(
+            data: resp,
+            vendor: context.s.vendorYourReceipt,
+            onScanAnother: (ctx) => Navigator.of(ctx).maybePop(),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = '$e'; _phase = _Phase.error; });
+    }
+  }
+
+  String _mimeFor(String path) {
+    final p = path.toLowerCase();
+    if (p.endsWith('.png')) return 'image/png';
+    if (p.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
@@ -172,9 +223,13 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   Widget _body(AppPalette c) {
     switch (_phase) {
       case _Phase.reading:
-        return _LoadingState(label: context.s.reading);
+        return _LoadingState(
+            label: widget.cloud ? context.s.readingWithGemma : context.s.reading,
+            note: widget.cloud ? context.s.uploadingNote : null);
       case _Phase.matching:
-        return _LoadingState(label: context.s.matching);
+        return _LoadingState(
+            label: context.s.matching,
+            note: widget.cloud ? context.s.uploadingNote : null);
       case _Phase.error:
         return _ErrorState(
           message: _error ?? context.s.somethingWrong,
@@ -189,9 +244,10 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
 }
 
 class _LoadingState extends StatelessWidget {
-  const _LoadingState({required this.label});
+  const _LoadingState({required this.label, this.note});
 
   final String label;
+  final String? note;
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +266,7 @@ class _LoadingState extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Text(
-            context.s.onDeviceNote,
+            note ?? context.s.onDeviceNote,
             textAlign: TextAlign.center,
             style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 12, height: 1.4, color: c.textMuted),
           ),
