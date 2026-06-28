@@ -251,6 +251,8 @@ class Handler(BaseHTTPRequestHandler):
                     # Only drug TEXT is sent (the receipt image already stays on-device).
                     if verify and cerebras.have_key():
                         quorum.verify_result(result, quorum.make_complete(mock=False))
+                    elif verify:
+                        log.info("verify requested but CEREBRAS_API_KEY not set; quorum skipped")
                     pharmacies = _nearby(conn, location) if location else []
                     payload = {"result": result, "pharmacies": pharmacies}
                 else:                                      # /v1/nearby
@@ -294,6 +296,9 @@ def main():
     httpd.daemon_threads = True
     httpd.socket = ctx.wrap_socket(httpd.socket, server_side=True)
     log.info("listening on https://%s:%d  (keys=%d)", HOST, PORT, len(_KEYS))
+    log.info("safety quorum: %s",
+             "ON (CEREBRAS_API_KEY present)" if cerebras.have_key()
+             else "OFF — set CEREBRAS_API_KEY before starting to enable /v1/analyze verify")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
