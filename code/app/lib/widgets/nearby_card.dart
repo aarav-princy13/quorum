@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shadcn_ui/shadcn_ui.dart';
 
 import '../l10n/strings.dart';
 import '../models/analysis.dart';
@@ -32,7 +31,12 @@ class NearbyCard extends StatelessWidget {
     if (pharmacies.isEmpty) return const SizedBox.shrink();
     final shown = pharmacies.take(maxInline).toList();
     final more = pharmacies.length - shown.length;
-    return Container(
+    // The whole card opens the full Nearby screen (map + address search) — so it's
+    // reachable even when only one pharmacy came back.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onSeeAll,
+      child: Container(
       decoration: BoxDecoration(
         color: c.surface2,
         borderRadius: BorderRadius.circular(12),
@@ -46,28 +50,31 @@ class NearbyCard extends StatelessWidget {
             children: [
               Icon(Icons.location_on_outlined, size: 16, color: c.textSecondary),
               const SizedBox(width: 6),
-              Text(
-                title ?? context.s.nearbyPharmacies,
-                style: TextStyle(
-                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: c.textPrimary),
+              Expanded(
+                child: Text(
+                  title ?? context.s.nearbyPharmacies,
+                  style: TextStyle(
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: c.textPrimary),
+                ),
               ),
+              if (more > 0)
+                Text(
+                  context.s.seeAll(pharmacies.length),
+                  style: TextStyle(
+                      fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                      fontSize: 13, color: c.primary),
+                ),
+              const SizedBox(width: 2),
+              Icon(Icons.chevron_right, size: 18, color: c.textMuted),
             ],
           ),
           const SizedBox(height: 6),
           for (final p in shown) PharmacyRow(pharmacy: p),
-          if (more > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 2, bottom: 6),
-              child: ShadButton.link(
-                padding: EdgeInsets.zero,
-                onPressed: onSeeAll,
-                child: Text(context.s.seeAll(pharmacies.length)),
-              ),
-            ),
         ],
+      ),
       ),
     );
   }
