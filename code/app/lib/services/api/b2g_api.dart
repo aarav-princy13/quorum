@@ -78,10 +78,12 @@ class B2gApi {
 
   /// Scan a receipt's line items. Location is optional; when given, the server
   /// distance-ranks nearby pharmacies in the response.
-  Future<AnalyzeResponse> analyze(List<LineItem> items, {double? lat, double? lon}) async {
+  Future<AnalyzeResponse> analyze(List<LineItem> items,
+      {double? lat, double? lon, bool verify = true}) async {
     final json = await _signedPost(_path, {
       'items': items.map((e) => e.toJson()).toList(),
       if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
+      'verify': verify, // opt-in Safety Quorum (server runs it only if its key is set)
     });
     return AnalyzeResponse.fromJson(json);
   }

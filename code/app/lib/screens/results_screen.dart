@@ -9,6 +9,7 @@ import '../widgets/app_badge.dart';
 import '../widgets/disclaimer.dart';
 import '../widgets/money.dart';
 import '../widgets/nearby_card.dart';
+import '../widgets/quorum_callout.dart';
 import '../widgets/safety_callout.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
@@ -246,6 +247,10 @@ class _ItemRow extends StatelessWidget {
                 [m.salt, m.strength, m.form].where((s) => s.isNotEmpty).join(' · '),
                 style: TextStyle(fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback, fontSize: 13, color: c.textSecondary),
               ),
+              if (item.quorum != null) ...[
+                const SizedBox(height: 8),
+                Align(alignment: Alignment.centerLeft, child: QuorumChip(item.quorum!)),
+              ],
               if (item.hasSavings) ...[
                 const SizedBox(height: 10),
                 Row(

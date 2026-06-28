@@ -126,6 +126,14 @@ class S {
         '$altPrice/यूनिट बनाम $basePrice · $qty पर $lineSaving बचत',
       );
 
+  // Safety Quorum (AI verification of the substitution)
+  String get aiSafetyCheck => _('AI safety check', 'एआई सुरक्षा जाँच');
+  String confidencePct(int n) => _('$n% confidence', '$n% विश्वास');
+  String get verifiedByGemma => _(
+        'Checked by a committee of Gemma 4 agents on Cerebras',
+        'Cerebras पर Gemma 4 एजेंट समिति द्वारा जाँचा गया',
+      );
+
   // Safety / disclaimer
   String get janAushadhi => _('Jan Aushadhi', 'जन औषधि');
   String get iHavePrescription =>

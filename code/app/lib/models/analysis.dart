@@ -6,6 +6,8 @@ library;
 double _d(dynamic v) => (v as num?)?.toDouble() ?? 0.0;
 double? _dn(dynamic v) => v == null ? null : (v as num).toDouble();
 int _i(dynamic v) => (v as num?)?.toInt() ?? 0;
+List<String> _sl(dynamic v) =>
+    ((v as List?) ?? const []).map((e) => e.toString()).toList();
 
 class AnalyzeResponse {
   final AnalysisResult result;
@@ -75,6 +77,9 @@ class ResultItem {
   final double savingsPct;
   final Safety safety;
 
+  /// Safety Quorum verdict (opt-in `verify`); null when verification wasn't run.
+  final Quorum? quorum;
+
   const ResultItem({
     required this.query,
     required this.qty,
@@ -89,6 +94,7 @@ class ResultItem {
     required this.savingsInrLine,
     required this.savingsPct,
     required this.safety,
+    this.quorum,
   });
 
   bool get hasSavings => cheapestAlternative != null && savingsInrLine > 0;
@@ -117,6 +123,48 @@ class ResultItem {
         savingsInrLine: _d(j['savings_inr_line']),
         savingsPct: _d(j['savings_pct']),
         safety: Safety.fromJson(j['safety'] as Map<String, dynamic>),
+        quorum: j['quorum'] == null
+            ? null
+            : Quorum.fromJson(j['quorum'] as Map<String, dynamic>),
+      );
+}
+
+/// The Safety Quorum's verdict for one item — a multi-agent check on top of the
+/// matcher (see backend b2g/quorum.py). One-way ratchet: only ever adds caution.
+class Quorum {
+  final String verdict; // 'ok' | 'caution' | 'reject'
+  final int confidence; // overall_confidence 0..100
+  final String label; // human label, e.g. 'Switch with caution'
+  final bool recommend;
+  final List<String> flags;
+  final String explanation;
+  final bool verified; // false = auto-passed (exact OTC), not committee-checked
+  final bool autoPass;
+
+  const Quorum({
+    required this.verdict,
+    required this.confidence,
+    required this.label,
+    required this.recommend,
+    required this.flags,
+    required this.explanation,
+    required this.verified,
+    required this.autoPass,
+  });
+
+  bool get isOk => verdict == 'ok';
+  bool get isCaution => verdict == 'caution';
+  bool get isReject => verdict == 'reject';
+
+  factory Quorum.fromJson(Map<String, dynamic> j) => Quorum(
+        verdict: j['verdict'] as String? ?? 'ok',
+        confidence: _i(j['overall_confidence']),
+        label: j['label'] as String? ?? '',
+        recommend: j['recommend'] as bool? ?? true,
+        flags: _sl(j['flags']),
+        explanation: j['explanation'] as String? ?? '',
+        verified: j['verified'] as bool? ?? false,
+        autoPass: j['auto_pass'] as bool? ?? false,
       );
 }
 

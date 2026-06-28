@@ -226,6 +226,8 @@ def verify_result(result, complete, max_item_workers=4):
     items = result.get("items", [])
     risky = []
     for item in items:
+        if not item.get("found"):
+            continue                       # nothing matched -> nothing to verify
         if is_risky(item):
             risky.append(item)
         else:

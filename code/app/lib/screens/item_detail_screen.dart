@@ -7,6 +7,7 @@ import '../widgets/app_badge.dart';
 import '../widgets/disclaimer.dart';
 import '../widgets/money.dart';
 import '../widgets/nearby_card.dart';
+import '../widgets/quorum_callout.dart';
 import '../widgets/safety_callout.dart';
 import '../widgets/screen_header.dart';
 import '../widgets/section_label.dart';
@@ -53,6 +54,10 @@ class ItemDetailScreen extends StatelessWidget {
                   if (item.safety.requiresRxConfirmation) ...[
                     const SizedBox(height: 16),
                     SafetyCallout(item: item, showQuery: false),
+                  ],
+                  if (item.quorum != null && item.quorum!.verified) ...[
+                    const SizedBox(height: 16),
+                    QuorumCallout(quorum: item.quorum!),
                   ],
                   const SizedBox(height: 24),
                   _AlternativesSection(item: item),
