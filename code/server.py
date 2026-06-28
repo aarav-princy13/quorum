@@ -32,7 +32,7 @@ sys.path.insert(0, str(CODE_DIR))
 ROOT = CODE_DIR.parent
 
 from b2g.pipeline import process_receipt, nearby_pharmacies   # noqa: E402
-from b2g.places import osm_nearby                              # noqa: E402
+from b2g.places import osm_nearby, geocode_search             # noqa: E402
 from b2g.security import load_keys, verify_request, NonceCache, TokenBucket  # noqa: E402
 
 DB_PATH = os.environ.get("B2G_DB", str(ROOT / "data" / "b2g.db"))
@@ -107,6 +107,16 @@ def validate_nearby(obj):
     if loc is None:
         raise ValueError("location is required")
     return _parse_location(loc)
+
+
+def validate_geocode(obj):
+    """Validate the /v1/geocode body. Returns the query string."""
+    if not isinstance(obj, dict):
+        raise ValueError("body must be an object")
+    q = obj.get("q")
+    if not isinstance(q, str) or not (1 <= len(q) <= MAX_NAME):
+        raise ValueError("q must be a 1..%d char string" % MAX_NAME)
+    return q
 
 
 def _nearby(conn, location):
@@ -184,7 +194,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         t0 = time.time()
-        if self.path not in ("/v1/analyze", "/v1/nearby"):
+        if self.path not in ("/v1/analyze", "/v1/nearby", "/v1/geocode"):
             self._send(404, {"error": "not found"})
             return self._audit(404, t0)
 
@@ -218,11 +228,18 @@ class Handler(BaseHTTPRequestHandler):
                 obj = json.loads(body.decode("utf-8"))
                 if self.path == "/v1/analyze":
                     items, location = validate_payload(obj)
-                else:                                      # /v1/nearby
+                elif self.path == "/v1/nearby":
                     location = validate_nearby(obj)
+                else:                                      # /v1/geocode
+                    query = validate_geocode(obj)
             except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
                 self._send(400, {"error": "invalid payload"})
                 return self._audit(400, t0, "validate", keyid)
+
+            if self.path == "/v1/geocode":
+                results = geocode_search(query) or []     # None (error) -> [] to client
+                self._send(200, {"results": results})
+                return self._audit(200, t0, "", keyid)
 
             conn = _ro_conn()
             try:

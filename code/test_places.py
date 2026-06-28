@@ -13,7 +13,7 @@ from pathlib import Path
 CODE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(CODE_DIR))
 
-from b2g.places import parse_overpass  # noqa: E402
+from b2g.places import parse_overpass, parse_photon  # noqa: E402
 
 # A point in Chandigarh; elements at increasing distances + one JA kendra + one
 # coordinate-less node that must be dropped.
@@ -50,6 +50,27 @@ def main():
     check("Jan Aushadhi kendra classified", ja is not None and ja["kind"] == "jan_aushadhi")
     check("Far Chemist excluded by limit",
           all(r["name"] != "Far Chemist" for r in rows))
+
+    # --- Photon geocode parsing ---
+    photon = {
+        "features": [
+            {"geometry": {"coordinates": [76.7794, 30.7333]},
+             "properties": {"name": "Sector 17", "city": "Chandigarh",
+                            "state": "Chandigarh", "country": "India"}},
+            {"geometry": {"coordinates": [77.2090, 28.6139]},
+             "properties": {"street": "Rajpath", "housenumber": "1",
+                            "city": "New Delhi", "state": "Delhi"}},
+            {"geometry": {}, "properties": {"name": "No Coords"}},   # dropped
+        ],
+    }
+    g = parse_photon(photon, limit=5)
+    check("geocode: coordinate-less feature dropped", len(g) == 2)
+    check("geocode: lat/lon mapped (not swapped)",
+          abs(g[0]["lat"] - 30.7333) < 1e-6 and abs(g[0]["lon"] - 76.7794) < 1e-6)
+    check("geocode: label dedupes & joins",
+          g[0]["label"] == "Sector 17, Chandigarh, India")
+    check("geocode: housenumber+street label",
+          g[1]["label"].startswith("1 Rajpath"))
 
     print(f"\n{'PASS' if not fails else 'FAIL'}: {len(fails)} failure(s)")
     return 1 if fails else 0
