@@ -147,10 +147,12 @@ def _merge(item, lens_results):
     final = max(verdicts, key=lambda v: _ORDER.get(v, 1))
     overall = min((_safe_score(r) for r in lens_results.values()), default=0)
     flags = sorted({f for r in lens_results.values() for f in r.get("flags", []) if f})
-    # Dedupe notes (parallel lenses can return the same message, e.g. on API error).
-    notes = list(dict.fromkeys(
-        r["note"] for r in lens_results.values()
-        if r.get("verdict") != "ok" and r.get("note")))
+    # Notes from the cautioning/rejecting lenses, most-severe first, deduped and
+    # capped (parallel lenses often restate the same concern) for a clean explanation.
+    ranked = sorted(
+        (r for r in lens_results.values() if r.get("verdict") != "ok" and r.get("note")),
+        key=lambda r: _ORDER.get(r.get("verdict"), 1), reverse=True)
+    notes = list(dict.fromkeys(r["note"] for r in ranked))[:2]
 
     base = f"Same {m.get('salt')} {m.get('strength')} {m.get('form') or ''}".strip()
     base += " — equivalent by composition."
