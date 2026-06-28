@@ -182,14 +182,16 @@ class CaptureScreen extends StatelessWidget {
               Column(
                   children: [
                     Container(
-                      width: 84,
-                      height: 84,
+                      width: 116,
+                      height: 116,
+                      clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
-                        color: c.primaryTint,
-                        borderRadius: BorderRadius.circular(22),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: c.border, width: 1),
                       ),
-                      child: Icon(Icons.receipt_long_outlined,
-                          size: 40, color: c.primaryOnTint),
+                      padding: const EdgeInsets.all(12),
+                      child: Image.asset('assets/quorum.png', fit: BoxFit.contain),
                     ),
                     const SizedBox(height: 22),
                     Text(

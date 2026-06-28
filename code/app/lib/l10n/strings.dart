@@ -17,7 +17,7 @@ class S {
   String _(String en, String hin) => hi ? hin : en;
 
   // Capture
-  String get appTitle => _('Brand → Generic', 'ब्रांड → जेनेरिक');
+  String get appTitle => _('Quorum', 'Quorum');
   String get captureHeadline =>
       _('Scan a pharmacy receipt', 'दवा की रसीद स्कैन करें');
   String get captureSubtitle => _(

@@ -48,6 +48,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  flutter_launcher_icons: ^0.14.1
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -65,6 +67,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/quorum.png
 
   # Bundled offline (no runtime font fetch). Geist + Noto Sans Devanagari are
   # variable fonts; Flutter applies weight via the wght axis. Licenses (OFL) live
@@ -107,3 +112,14 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# App launcher icon generation: `dart run flutter_launcher_icons`
+flutter_launcher_icons:
+  image_path: "assets/quorum_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/quorum_icon.png"
+  min_sdk_android: 21
