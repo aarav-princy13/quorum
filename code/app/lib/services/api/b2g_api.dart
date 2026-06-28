@@ -25,6 +25,21 @@ List<int> b2gHexToBytes(String hex) {
   return out;
 }
 
+/// One address-autocomplete suggestion from `/v1/geocode`.
+class GeocodeSuggestion {
+  final String label;
+  final double lat;
+  final double lon;
+
+  const GeocodeSuggestion({required this.label, required this.lat, required this.lon});
+
+  factory GeocodeSuggestion.fromJson(Map<String, dynamic> j) => GeocodeSuggestion(
+        label: j['label'] as String? ?? '',
+        lat: (j['lat'] as num).toDouble(),
+        lon: (j['lon'] as num).toDouble(),
+      );
+}
+
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
@@ -49,6 +64,17 @@ class B2gApi {
   }
 
   static const String _nearbyPath = '/v1/nearby';
+  static const String _geocodePath = '/v1/geocode';
+
+  /// Address autocomplete. Returns [] for short queries or when the backend
+  /// isn't configured (so the field degrades quietly rather than erroring).
+  Future<List<GeocodeSuggestion>> geocodeSearch(String query) async {
+    if (query.trim().length < 3 || !ApiConfig.isConfigured) return const [];
+    final json = await _signedPost(_geocodePath, {'q': query});
+    return ((json['results'] as List?) ?? const [])
+        .map((r) => GeocodeSuggestion.fromJson(r as Map<String, dynamic>))
+        .toList();
+  }
 
   /// Scan a receipt's line items. Location is optional; when given, the server
   /// distance-ranks nearby pharmacies in the response.

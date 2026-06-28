@@ -8,69 +8,46 @@ import '../services/api/b2g_api.dart';
 import '../services/location/location_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/fonts.dart';
+import '../widgets/address_search_field.dart';
 import '../widgets/app_badge.dart';
 import '../widgets/pharmacy_map.dart';
 import '../widgets/pharmacy_row.dart';
 import '../widgets/screen_header.dart';
 
-/// Outcome of an address lookup: whether the address resolved, the resolved
-/// point (for map centring), and the pharmacies near it.
-class NearbyResult {
-  const NearbyResult({
-    required this.addressFound,
-    required this.pharmacies,
-    this.origin,
-  });
-
-  final bool addressFound;
-  final List<Pharmacy> pharmacies;
-  final LatLon? origin;
-}
-
-typedef AddressLookup = Future<NearbyResult> Function(String address);
-
-/// Default lookup: OS geocode the address, then ask the backend for pharmacies
-/// near the resolved point. Injected as a seam so tests need no plugins/network.
-AddressLookup defaultAddressLookup() {
-  final api = B2gApi();
-  const location = LocationService();
-  return (address) async {
-    final geo = await location.geocode(address);
-    if (geo == null) {
-      return const NearbyResult(addressFound: false, pharmacies: []);
-    }
-    final pharmacies = await api.nearby(lat: geo.lat, lon: geo.lon);
-    return NearbyResult(addressFound: true, pharmacies: pharmacies, origin: geo);
-  };
-}
+/// (lat, lon) -> pharmacies. Injected as a seam so tests need no network.
+typedef NearbyAt = Future<List<Pharmacy>> Function(double lat, double lon);
 
 /// The full nearby view (DESIGN.md #5): a distance-ranked list OR an OpenStreetMap
-/// map of the same pharmacies, with Jan Aushadhi flagged. When device location
-/// isn't available the user can type an address to search instead.
+/// map of the same pharmacies, with Jan Aushadhi flagged. An address typeahead
+/// (autocomplete) lets the user search anywhere when device location is off.
 class NearbyScreen extends StatefulWidget {
   const NearbyScreen({
     super.key,
     required this.pharmacies,
     this.origin,
-    this.addressLookup,
+    this.suggest,
+    this.nearbyAt,
   });
 
   final List<Pharmacy> pharmacies;
 
-  /// The point the pharmacies are relative to (from the receipt scan's GPS fix),
-  /// if known — used to centre the map and drop a "here" marker.
+  /// The point the pharmacies are relative to (GPS fix / saved location), if known
+  /// — used to centre the map and drop a "here" marker.
   final LatLon? origin;
 
-  /// Address -> nearby lookup. Defaults to [defaultAddressLookup]; tests inject a fake.
-  final AddressLookup? addressLookup;
+  /// Address autocomplete + coords->pharmacies. Default to the real backend; tests inject fakes.
+  final Suggester? suggest;
+  final NearbyAt? nearbyAt;
 
   @override
   State<NearbyScreen> createState() => _NearbyScreenState();
 }
 
 class _NearbyScreenState extends State<NearbyScreen> {
-  late final AddressLookup _lookup = widget.addressLookup ?? defaultAddressLookup();
-  final TextEditingController _addr = TextEditingController();
+  final B2gApi _api = B2gApi();
+  late final Suggester _suggest = widget.suggest ?? _api.geocodeSearch;
+  late final NearbyAt _nearbyAt =
+      widget.nearbyAt ?? (lat, lon) => _api.nearby(lat: lat, lon: lon);
 
   late List<Pharmacy> _pharmacies = widget.pharmacies;
   late LatLon? _origin = widget.origin;
@@ -80,36 +57,20 @@ class _NearbyScreenState extends State<NearbyScreen> {
   String? _searchedLabel;
   Pharmacy? _selected;
 
-  @override
-  void dispose() {
-    _addr.dispose();
-    super.dispose();
-  }
-
-  Future<void> _search() async {
-    final query = _addr.text.trim();
-    if (query.isEmpty || _loading) return;
-    FocusScope.of(context).unfocus();
+  Future<void> _onPick(GeocodeSuggestion s) async {
     setState(() {
       _loading = true;
       _error = null;
       _selected = null;
     });
     try {
-      final res = await _lookup(query);
+      final pharmacies = await _nearbyAt(s.lat, s.lon);
       if (!mounted) return;
-      if (!res.addressFound) {
-        setState(() {
-          _loading = false;
-          _error = context.s.addressNotFound;
-        });
-        return;
-      }
       setState(() {
         _loading = false;
-        _pharmacies = res.pharmacies;
-        _origin = res.origin;
-        _searchedLabel = query;
+        _pharmacies = pharmacies;
+        _origin = (lat: s.lat, lon: s.lon);
+        _searchedLabel = s.label;
       });
     } catch (e) {
       if (!mounted) return;
@@ -165,11 +126,7 @@ class _NearbyScreenState extends State<NearbyScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-              child: _AddressBar(
-                controller: _addr,
-                loading: _loading,
-                onSearch: _search,
-              ),
+              child: AddressSearchField(suggest: _suggest, onSelected: _onPick),
             ),
             if (_error != null)
               Padding(
@@ -375,42 +332,6 @@ class _SelectedCard extends StatelessWidget {
             size: ShadButtonSize.sm,
             onPressed: onClose,
             child: Icon(Icons.close, size: 16, color: c.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddressBar extends StatelessWidget {
-  const _AddressBar({
-    required this.controller,
-    required this.loading,
-    required this.onSearch,
-  });
-
-  final TextEditingController controller;
-  final bool loading;
-  final VoidCallback onSearch;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: ShadInput(
-              controller: controller,
-              placeholder: Text(context.s.searchHint),
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => onSearch(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          ShadButton(
-            onPressed: loading ? null : onSearch,
-            child: Text(context.s.search),
           ),
         ],
       ),

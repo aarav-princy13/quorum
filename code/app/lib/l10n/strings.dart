@@ -163,6 +163,8 @@ class S {
         'Search an address to find pharmacies nearby.',
         'पास की फ़ार्मेसी खोजने के लिए कोई पता खोजें।',
       );
+  String get searchingAddr => _('Searching…', 'खोज रहे हैं…');
+  String get noMatches => _('No matching places found', 'कोई स्थान नहीं मिला');
   String seeAll(int n) => _('See all $n', 'सभी $n देखें');
   String kmAway(String km) => _('$km km away', '$km कि.मी. दूर');
   String km(String v) => _('$v km', '$v कि.मी.');
@@ -177,6 +179,15 @@ class S {
         'हल्का, गहरा, या सिस्टम के अनुसार',
       );
   String get language => _('Language', 'भाषा');
+  String get location => _('Location', 'स्थान');
+  String get locationNotSet =>
+      _('Not set — tap to choose', 'सेट नहीं — चुनने के लिए टैप करें');
+  String get setLocation => _('Set your location', 'अपना स्थान सेट करें');
+  String get clear => _('Clear', 'हटाएँ');
+  String get locationSettingHint => _(
+        'Saved on this device and used to find nearby pharmacies when location is off.',
+        'इस डिवाइस पर सहेजा जाता है और स्थान बंद होने पर पास की फ़ार्मेसी खोजने में उपयोग होता है।',
+      );
   String get privacy => _('Privacy', 'गोपनीयता');
   String get privacyLong => _(
         'Your receipt photo is read on your device and never uploaded. Only the '

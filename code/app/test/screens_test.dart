@@ -6,6 +6,7 @@ import 'package:shadcn_ui/shadcn_ui.dart';
 
 import 'package:brand_to_generic/data/sample_result.dart';
 import 'package:brand_to_generic/models/analysis.dart';
+import 'package:brand_to_generic/services/api/b2g_api.dart';
 import 'package:brand_to_generic/screens/item_detail_screen.dart';
 import 'package:brand_to_generic/screens/nearby_screen.dart';
 import 'package:brand_to_generic/screens/settings_screen.dart';
@@ -91,33 +92,31 @@ void main() {
     expect(find.text('Search an address to find pharmacies nearby.'), findsOneWidget);
   });
 
-  testWidgets('nearby address search populates results via injected lookup',
+  testWidgets('nearby autocomplete: pick a suggestion shows its pharmacies',
       (tester) async {
-    Future<NearbyResult> fakeLookup(String address) async {
-      if (address.toLowerCase().contains('nowhere')) {
-        return const NearbyResult(addressFound: false, pharmacies: []);
-      }
-      return const NearbyResult(addressFound: true, pharmacies: [
-        Pharmacy(
-            name: 'Test Chemist', lat: 0, lon: 0, kind: 'pharmacy', distanceKm: 0.5),
-      ]);
-    }
+    Future<List<GeocodeSuggestion>> fakeSuggest(String q) async => const [
+          GeocodeSuggestion(label: 'Sector 17, Chandigarh', lat: 30.74, lon: 76.78),
+        ];
+    Future<List<Pharmacy>> fakeNearby(double lat, double lon) async => const [
+          Pharmacy(
+              name: 'Test Chemist', lat: 30.74, lon: 76.78, kind: 'pharmacy', distanceKm: 0.5),
+        ];
 
-    await tester.pumpWidget(
-      _host(NearbyScreen(pharmacies: const [], addressLookup: fakeLookup)),
-    );
+    await tester.pumpWidget(_host(NearbyScreen(
+      pharmacies: const [],
+      suggest: fakeSuggest,
+      nearbyAt: fakeNearby,
+    )));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(EditableText), '221B Baker Street');
-    await tester.tap(find.text('Search'));
+    await tester.enterText(find.byType(EditableText), 'sector 17');
+    await tester.pump(const Duration(milliseconds: 400)); // past the debounce
     await tester.pumpAndSettle();
-    expect(find.text('Test Chemist'), findsOneWidget);
+    expect(find.text('Sector 17, Chandigarh'), findsOneWidget); // suggestion shown
 
-    // An unresolvable address surfaces an honest error.
-    await tester.enterText(find.byType(EditableText), 'nowhere land');
-    await tester.tap(find.text('Search'));
+    await tester.tap(find.text('Sector 17, Chandigarh'));
     await tester.pumpAndSettle();
-    expect(find.textContaining("Couldn't find that address"), findsOneWidget);
+    expect(find.text('Test Chemist'), findsOneWidget); // pharmacies for that point
   });
 
   testWidgets('nearby map toggle renders the map', (tester) async {
