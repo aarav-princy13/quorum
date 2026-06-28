@@ -131,8 +131,23 @@ def _merge(item, lens_results):
     final = max(verdicts, key=lambda v: _ORDER.get(v, 1))
     overall = min((_safe_score(r) for r in lens_results.values()), default=0)
     flags = sorted({f for r in lens_results.values() for f in r.get("flags", []) if f})
-    notes = [r["note"] for r in lens_results.values()
-             if r.get("verdict") != "ok" and r.get("note")]
+    # Dedupe notes (parallel lenses can return the same message, e.g. on API error).
+    notes = list(dict.fromkeys(
+        r["note"] for r in lens_results.values()
+        if r.get("verdict") != "ok" and r.get("note")))
+
+    base = f"Same {m.get('salt')} {m.get('strength')} {m.get('form') or ''}".strip()
+    base += " — equivalent by composition."
+
+    # Infrastructure failure (every lens errored) is NOT a clinical caution — say so.
+    if lens_results and all("lens_error" in r.get("flags", []) for r in lens_results.values()):
+        return {
+            "verdict": "caution", "overall_confidence": 0,
+            "label": "Verification unavailable — please retry", "recommend": False,
+            "flags": ["verification-unavailable"],
+            "explanation": base + " (Quorum could not reach the model; not assessed.)",
+            "lenses": lens_results, "verified": True,
+        }
 
     if final == "reject":
         label, recommend = "Couldn't verify — ask a pharmacist", False
@@ -141,8 +156,6 @@ def _merge(item, lens_results):
     else:
         label, recommend = "Safe to switch", True
 
-    base = f"Same {m.get('salt')} {m.get('strength')} {m.get('form') or ''}".strip()
-    base += " — equivalent by composition."
     explanation = " ".join([base] + notes) if notes else base
 
     lat = [r["latency_s"] for r in lens_results.values() if r.get("latency_s")]

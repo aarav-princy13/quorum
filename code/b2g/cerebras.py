@@ -78,7 +78,13 @@ def complete(messages, schema=None, reasoning_effort="none",
     req = urllib.request.Request(
         API_URL,
         data=json.dumps(body).encode("utf-8"),
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            # Cloudflare (error 1010) bans the default "Python-urllib/x" UA; set our own.
+            "User-Agent": "brand-to-generic-quorum/1.0",
+        },
         method="POST",
     )
     t0 = time.monotonic()
