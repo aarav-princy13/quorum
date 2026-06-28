@@ -61,6 +61,66 @@ class CaptureScreen extends StatelessWidget {
     );
   }
 
+  /// Cloud scan can come from the camera or the library — let the user pick.
+  Future<void> _pickCloudSource(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: context.colors.surface0,
+      builder: (sheetContext) {
+        final c = sheetContext.colors;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  sheetContext.s.cloudScan,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                    fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  sheetContext.s.cloudScanNote,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                    fontSize: 11, height: 1.4, color: c.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ShadButton(
+                  width: double.infinity,
+                  leading: const Icon(Icons.photo_camera_outlined, size: 18),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    _capture(context, ImageSource.camera, cloud: true);
+                  },
+                  child: Text(sheetContext.s.takePhoto),
+                ),
+                const SizedBox(height: 10),
+                ShadButton.outline(
+                  width: double.infinity,
+                  leading: const Icon(Icons.photo_library_outlined, size: 18),
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    _capture(context, ImageSource.gallery, cloud: true);
+                  },
+                  child: Text(sheetContext.s.chooseFromGallery),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _openSample(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -171,7 +231,7 @@ class CaptureScreen extends StatelessWidget {
               const SizedBox(height: 10),
               ShadButton.outline(
                 width: double.infinity,
-                onPressed: () => _capture(context, ImageSource.gallery, cloud: true),
+                onPressed: () => _pickCloudSource(context),
                 child: Text(context.s.cloudScan),
               ),
               const SizedBox(height: 6),

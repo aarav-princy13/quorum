@@ -25,6 +25,7 @@ class S {
         'सस्ते जेनेरिक, आधिकारिक जन औषधि कीमतें और पर्ची-सुरक्षा चेतावनियाँ देखें।',
       );
   String get scanReceipt => _('Scan receipt', 'रसीद स्कैन करें');
+  String get takePhoto => _('Take photo', 'फ़ोटो लें');
   String get chooseFromGallery => _('Choose from gallery', 'गैलरी से चुनें');
   String get privacyShort => _(
         'Your photo is read on your device and never uploaded — only the text is used.',
