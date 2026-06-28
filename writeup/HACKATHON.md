@@ -62,7 +62,8 @@ inference. Surface per-call timing; (stretch) side-by-side vs a GPU provider.
 3. [DONE] `code/quorum_demo.py` — matcher → quorum → report (auto live/mock). Mock verified on the real 248k DB.
 4. [DONE] Live-verified the quorum on real Gemma (verdicts strong — see status).
 5. [DONE] Opt-in Cerebras VLM OCR (`code/b2g/vlm_ocr.py`) + end-to-end `code/scan_demo.py` (image→OCR→matcher→quorum).
-6. [NEXT] Live-verify VLM OCR on a real image (pharm_5); then wire into `server.py` + Flutter; record 60s demo.
+6. [DONE] Live-verified VLM OCR + full pipeline on pharm_5 (see status). Lenses tuned + calibrated.
+7. [NEXT] Wire quorum + VLM OCR into `server.py` + Flutter Results; record 60s demo (pharm_5 is the hero case).
 
 ## Status (2026-06-28)
 **Quorum LIVE-VERIFIED.** Real `gemma-4-31b` results: warfarin → caution (clinical lens cited INR monitoring);
@@ -70,5 +71,10 @@ inference. Surface per-call timing; (stretch) side-by-side vs a GPU provider.
 exact Rx matches (HCQS/Pan/Telma) → "safe to switch" + Rx reminder. **Speed: 4 agents ~0.5s parallel vs ~1.7s
 sequential ≈ 3.4–3.6×.** End-to-end scan demo runs on pharm_5 (real RA bill) in mock; EYEMIST exercises the
 exact-OTC AUTO-PASS path; FOLITRAX 10MG exposed a prefix tablet→injection route mismatch to watch for live.
-Commits: quorum `c7ac6d1`, UA fix `bf7b594`, VLM OCR + scan demo `99e0b16`. Existing suites green.
-**Next action:** run `python3 code/scan_demo.py pharm_5` LIVE (real Gemma vision OCR + quorum).
+Commits: quorum `c7ac6d1`, UA fix `bf7b594`, VLM OCR + scan demo `99e0b16`, lens tuning `6bf8df1`, notes cap `140fb4c`.
+
+**FULL PIPELINE LIVE-VALIDATED on pharm_5 (real RA bill, 2026-06-28):** Gemma vision OCR read 11/12 items in
+~1.3s. After lens tuning, the quorum no longer false-rejects valid generic swaps (Crocin/Evion/Shelcal/HCQS →
+safe) while still REJECTING the genuinely dangerous **PREGAB mono → pregabalin+nortriptyline combo** (extra
+active ingredient) and cautioning **methotrexate ×2 (NTI)**. ₹1,781 surfaced savings; 3 of 12 flagged; ~3.7×
+parallel speedup. **Core is done.** Remaining = product integration (server + Flutter) and the 60s demo video.
