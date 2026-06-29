@@ -13,7 +13,7 @@ size, both cloud — so the gap reflects the INFERENCE HARDWARE, not the model.
 
   python3 code/bench_hardware.py                       # all configured providers, 3 runs
   python3 code/bench_hardware.py --runs 5 --no-local
-  python3 code/bench_hardware.py --google-model gemma-3-27b-it
+  python3 code/bench_hardware.py --google-model gemma-4-31B
 
 Prereqs: export the keys above; for local, serve the model on :8000. Stdlib only.
 """
@@ -89,7 +89,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--cerebras-model", default="gemma-4-31b")
-    ap.add_argument("--google-model", default="gemma-3-27b-it")
+    ap.add_argument("--google-model", default="gemma-4-31b-it")
     ap.add_argument("--local-url", default="http://localhost:8000/v1")
     ap.add_argument("--local-model", default="QwenPaw-Flash-4B-oQ4-fp16")
     ap.add_argument("--no-local", action="store_true", help="skip the local Mac model")
@@ -103,7 +103,7 @@ def main():
     contenders = [("Cerebras · Gemma 4 (wafer-scale)", "https://api.cerebras.ai/v1",
                    cere_key, args.cerebras_model)]
     if google_key:
-        contenders.append(("Google AI Studio · Gemma 3 (GPU/TPU)",
+        contenders.append(("Google AI Studio · Gemma 4 (GPU/TPU)",
                            "https://generativelanguage.googleapis.com/v1beta/openai",
                            google_key, args.google_model))
     else:
