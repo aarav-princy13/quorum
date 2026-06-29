@@ -6,19 +6,19 @@
 
 ---
 
-## What it is
-Indians overpay for medicine every day, even though cheaper generic variants with the exact same active ingredient usually exist. Apps that suggest generic medication already exist; however, they make you type the name of the drug in. Most importantly, they fail to inform you when a swap is unsafe.
+## What is it?
+People in India overpay for medicine every day, even though cheaper generic variants with the exact same active ingredient usually exist. Tools that suggest generic medication already exist; however, they make you enter drug names and operate to a low efficiency, missing significant medications and deals that Quorum does not. Most importantly, they fail to inform you when a swap is unsafe.
 
 **Quorum** reads a photographed pharmaceutical invoice with Gemma 4 vision, matches each medicine to cheaper generic equivalents from an official price catalogue, and then runs a **committee of Gemma 4 agents** that independently verify every substitution, returning the cheaper option with a confidence score and flagging anything dangerous.
 
-## On one real rheumatoid-arthritis bill
+## On one Real Rheumatoid-Arthritis Bill
 
 - **Read 12 / 12 line items** from a photo in ~1.3s (Gemma 4 vision).
 - **₹1,781 in surfaced savings** across the bill.
 - **Blocked a dangerous swap** a pregabalin-only line that the matcher had matched to a pregabalin **+ nortriptyline** combination (an extra active ingredient).
 - **Flagged methotrexate** as a narrow-therapeutic-index drug needing doctor supervision.
 
-## Why it's different
+## Why is it Different?
 
 The price-matcher is deterministic and precise (same salt, strength, and form). On top of it sits a multi-agent verification layer:
 
@@ -28,9 +28,9 @@ The price-matcher is deterministic and precise (same salt, strength, and form). 
 
 Running a whole committee *per line item* in real time is only practical because of Cerebras' inference speed.
 
-## Multimodal + speed, on the same model
+## Multimodal + Speed, on the Same Model
 
-Gemma 4 31B is multimodal — it reads the receipt image directly (no separate OCR engine). And because the app can route the *same* `gemma-4-31b` model to either provider, the speed difference is purely the hardware:
+Gemma 4 31B is multimodal; it reads the receipt image directly (no separate OCR engine). And because the app can route the *same* `gemma-4-31b` model to either provider, the speed difference is purely the hardware:
 
 | Same model, same bill | End-to-end |
 |---|---|
@@ -48,7 +48,7 @@ We capture the bill, with the choice between on device OCR or opt in cloud scann
 - **Privacy:** by default the photo is OCR'd **on-device** and never uploaded, with only the extracted text being sent. Cloud OCR (Gemma 4 vision) is an explicit opt-in.
 - **API:** TLS + HMAC-signed requests, strict input validation, read-only DB, no content logging.
 
-## Tech stack
+## Tech Stack
 
 Flutter (Dart) · Python **standard library only** (no pandas, no heavy deps) · SQLite · Gemma 4 31B on Cerebras (OpenAI-compatible API, structured outputs, `reasoning_effort`) · OpenStreetMap.
 
@@ -99,7 +99,7 @@ code/
 data/           SQLite catalogue (built from open data; gitignored)
 ```
 
-## Safety & disclaimer
+## Safety & Disclaimer
 
 Quorum is decision **support**, not medical advice. Prices are estimates from public catalogues. Confirm with your pharmacist before purchasing. Substituting a generic is a decision for you and your doctor; the app deliberately flags prescription-only and narrow-therapeutic-index drugs for professional review.
 
@@ -107,4 +107,4 @@ Quorum is decision **support**, not medical advice. Prices are estimates from pu
 
 Built with **Gemma 4 31B** running on **Cerebras** for the Cerebras × Google DeepMind Gemma 4 Hackathon. Drug data from the open Indian Medicine Dataset and the Government of India's Jan Aushadhi (PMBJP) catalogue; pharmacy locations from OpenStreetMap.
 
-Licensed under the **PolyForm Noncommercial License 1.0.0** — free for noncommercial use (study, research, personal projects); **commercial use requires permission from the author**. See [LICENSE](LICENSE).
+Licensed under the **PolyForm Noncommercial License 1.0.0**. Free for noncommercial use (study, research, personal projects); **commercial use requires permission from the author**. See [LICENSE](LICENSE).
