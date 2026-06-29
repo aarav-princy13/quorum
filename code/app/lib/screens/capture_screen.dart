@@ -33,7 +33,7 @@ class CaptureScreen extends StatelessWidget {
   final ValueChanged<SavedLocation?>? onSetSavedLocation;
 
   Future<void> _capture(BuildContext context, ImageSource source,
-      {bool cloud = false}) async {
+      {bool cloud = false, String provider = 'cerebras'}) async {
     final picker = ImagePicker();
     XFile? file;
     try {
@@ -58,66 +58,82 @@ class CaptureScreen extends StatelessWidget {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => AnalyzingScreen(
-            imagePath: path, ocr: ocr, fallbackLocation: savedLocation, cloud: cloud),
+            imagePath: path, ocr: ocr, fallbackLocation: savedLocation,
+            cloud: cloud, provider: provider),
       ),
     );
   }
 
   /// Cloud scan can come from the camera or the library — let the user pick.
   Future<void> _pickCloudSource(BuildContext context) async {
+    String engine = 'cerebras';   // selected inference engine (speed comparison)
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       backgroundColor: context.colors.surface0,
       builder: (sheetContext) {
         final c = sheetContext.colors;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  sheetContext.s.cloudScan,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
-                    fontSize: 16, fontWeight: FontWeight.w600, color: c.textPrimary,
-                  ),
+        TextStyle label(double size, FontWeight w, Color col) => TextStyle(
+            fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+            fontSize: size, fontWeight: w, height: 1.4, color: col);
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            Widget engineButton(String id, String text) {
+              final selected = engine == id;
+              final child = Text(text);
+              onTap() => setSheet(() => engine = id);
+              return Expanded(
+                child: selected
+                    ? ShadButton(width: double.infinity, onPressed: onTap, child: child)
+                    : ShadButton.outline(width: double.infinity, onPressed: onTap, child: child),
+              );
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(sheetContext.s.cloudScan,
+                        textAlign: TextAlign.center, style: label(16, FontWeight.w600, c.textPrimary)),
+                    const SizedBox(height: 4),
+                    Text(sheetContext.s.cloudScanNote,
+                        textAlign: TextAlign.center, style: label(11, FontWeight.w400, c.textMuted)),
+                    const SizedBox(height: 14),
+                    Text(sheetContext.s.cloudEngine, style: label(12, FontWeight.w500, c.textSecondary)),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      engineButton('cerebras', 'Cerebras'),
+                      const SizedBox(width: 8),
+                      engineButton('google', 'Google'),
+                    ]),
+                    const SizedBox(height: 14),
+                    ShadButton(
+                      width: double.infinity,
+                      leading: const Icon(Icons.photo_camera_outlined, size: 18),
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        _capture(context, ImageSource.camera, cloud: true, provider: engine);
+                      },
+                      child: Text(sheetContext.s.takePhoto),
+                    ),
+                    const SizedBox(height: 10),
+                    ShadButton.outline(
+                      width: double.infinity,
+                      leading: const Icon(Icons.photo_library_outlined, size: 18),
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        _capture(context, ImageSource.gallery, cloud: true, provider: engine);
+                      },
+                      child: Text(sheetContext.s.chooseFromGallery),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  sheetContext.s.cloudScanNote,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
-                    fontSize: 11, height: 1.4, color: c.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ShadButton(
-                  width: double.infinity,
-                  leading: const Icon(Icons.photo_camera_outlined, size: 18),
-                  onPressed: () {
-                    Navigator.of(sheetContext).pop();
-                    _capture(context, ImageSource.camera, cloud: true);
-                  },
-                  child: Text(sheetContext.s.takePhoto),
-                ),
-                const SizedBox(height: 10),
-                ShadButton.outline(
-                  width: double.infinity,
-                  leading: const Icon(Icons.photo_library_outlined, size: 18),
-                  onPressed: () {
-                    Navigator.of(sheetContext).pop();
-                    _capture(context, ImageSource.gallery, cloud: true);
-                  },
-                  child: Text(sheetContext.s.chooseFromGallery),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

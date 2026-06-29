@@ -93,12 +93,14 @@ class B2gApi {
   /// Cerebras (server-side OCR), then matched + quorum-verified. Unlike [analyze],
   /// this DOES send the photo — the caller must have told the user.
   Future<AnalyzeResponse> scan(List<int> imageBytes,
-      {required String mime, double? lat, double? lon, bool verify = true}) async {
+      {required String mime, double? lat, double? lon, bool verify = true,
+      String provider = 'cerebras'}) async {
     final json = await _signedPost(_scanPath, {
       'image': base64Encode(imageBytes),
       'mime': mime,
       if (lat != null && lon != null) 'location': {'lat': lat, 'lon': lon},
       'verify': verify,
+      'provider': provider,
     });
     return AnalyzeResponse.fromJson(json);
   }

@@ -135,7 +135,10 @@ def validate_scan(obj):
     loc = obj.get("location")
     location = _parse_location(loc) if loc is not None else None
     verify = bool(obj.get("verify", True))
-    return img, mime, location, verify
+    provider = obj.get("provider", "cerebras")
+    if provider not in ("cerebras", "google"):
+        raise ValueError("provider must be cerebras or google")
+    return img, mime, location, verify, provider
 
 
 def _nearby(conn, location):
@@ -249,7 +252,7 @@ class Handler(BaseHTTPRequestHandler):
                 if self.path == "/v1/analyze":
                     items, location, verify = validate_payload(obj)
                 elif self.path == "/v1/scan":
-                    image_b64, mime, location, verify = validate_scan(obj)
+                    image_b64, mime, location, verify, provider = validate_scan(obj)
                 elif self.path == "/v1/nearby":
                     location = validate_nearby(obj)
                 else:                                      # /v1/geocode
@@ -266,6 +269,9 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/v1/scan" and not cerebras.have_key():
                 self._send(503, {"error": "cloud OCR unavailable"})
                 return self._audit(503, t0, "no_key", keyid)
+            if self.path == "/v1/scan" and provider == "google" and not cerebras.google_key():
+                self._send(503, {"error": "google provider not configured"})
+                return self._audit(503, t0, "no_google_key", keyid)
 
             conn = _ro_conn()
             try:
@@ -282,7 +288,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path == "/v1/scan":
                     # OPT-IN cloud path: app uploaded the image to read with Gemma 4
                     # vision (default flow keeps OCR on-device). Then match + verify.
-                    items, ocr_meta = vlm_ocr.ocr_receipt_b64(image_b64, mime)
+                    items, ocr_meta = vlm_ocr.ocr_receipt_b64(image_b64, mime, provider=provider)
                     items = items[:MAX_ITEMS]
                     result = process_receipt(conn, items)
                     if verify:
@@ -290,7 +296,8 @@ class Handler(BaseHTTPRequestHandler):
                     pharmacies = _nearby(conn, location) if location else []
                     payload = {"result": result, "pharmacies": pharmacies,
                                "ocr": {"n_items": len(items),
-                                       "latency_s": ocr_meta.get("latency_s")}}
+                                       "latency_s": ocr_meta.get("latency_s"),
+                                       "provider": provider}}
                 else:                                      # /v1/nearby
                     payload = {"pharmacies": _nearby(conn, location)}
             finally:

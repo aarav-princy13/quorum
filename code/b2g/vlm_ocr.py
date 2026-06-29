@@ -59,9 +59,29 @@ def ocr_receipt(image_path, complete=None):
     return _ocr(cerebras.encode_image(str(image_path)), complete)
 
 
-def ocr_receipt_b64(b64, mime="image/jpeg", complete=None):
-    """Live: read a base64 image (e.g. uploaded by the app) with Gemma 4 vision."""
-    return _ocr(cerebras.image_part(b64, mime), complete)
+def ocr_receipt_b64(b64, mime="image/jpeg", provider="cerebras"):
+    """Read a base64 image with Gemma 4 vision on the chosen provider.
+
+    provider 'cerebras' (default) or 'google' (same gemma-4-31b model, different
+    hardware) — powers the in-app speed switch. Returns (items, meta) with
+    meta['provider'] and meta['latency_s'].
+    """
+    part = cerebras.image_part(b64, mime)
+    messages = cerebras.build_messages(
+        OCR_SYSTEM, "Extract the medication line items from this receipt.", part)
+    if provider == "google":
+        key = cerebras.google_key()
+        if not key:
+            raise RuntimeError("GOOGLE_API_KEY not set")
+        # Gemini's OpenAI-compat layer may not accept strict json_schema, so rely on
+        # the prompt + extract_json (the schema is Cerebras-only here).
+        text, meta = cerebras.complete(messages, schema=None, base_url=cerebras.GOOGLE_BASE_URL,
+                                       api_key=key, model=cerebras.GOOGLE_MODEL)
+    else:
+        text, meta = cerebras.complete(messages, schema=RECEIPT_SCHEMA)
+    meta = dict(meta or {})
+    meta["provider"] = provider
+    return cerebras.extract_json(text).get("items", []), meta
 
 
 def gold_items(receipt_id):

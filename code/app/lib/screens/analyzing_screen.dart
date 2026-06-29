@@ -28,6 +28,7 @@ class AnalyzingScreen extends StatefulWidget {
     required this.ocr,
     this.fallbackLocation,
     this.cloud = false,
+    this.provider = 'cerebras',
   });
 
   final String imagePath;
@@ -36,6 +37,9 @@ class AnalyzingScreen extends StatefulWidget {
   /// When true, OCR runs in the CLOUD (Gemma 4 vision via `/v1/scan`) — the photo
   /// IS uploaded. Default false keeps OCR on-device (photo never leaves).
   final bool cloud;
+
+  /// Cloud OCR engine: 'cerebras' (default) or 'google' — for the speed comparison.
+  final String provider;
 
   /// Used to rank nearby pharmacies when device GPS is off/denied (saved in Settings).
   final SavedLocation? fallbackLocation;
@@ -156,7 +160,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
     try {
       final resp = await _api.scan(bytes,
           mime: _mimeFor(widget.imagePath),
-          lat: gps?.lat ?? fb?.lat, lon: gps?.lon ?? fb?.lon);
+          lat: gps?.lat ?? fb?.lat, lon: gps?.lon ?? fb?.lon,
+          provider: widget.provider);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(

@@ -13,13 +13,32 @@ class AnalyzeResponse {
   final AnalysisResult result;
   final List<Pharmacy> pharmacies;
 
-  const AnalyzeResponse({required this.result, required this.pharmacies});
+  /// Present only on the cloud-scan path (`/v1/scan`): which engine read the image
+  /// and how long it took — powers the in-app speed comparison.
+  final Ocr? ocr;
+
+  const AnalyzeResponse({required this.result, required this.pharmacies, this.ocr});
 
   factory AnalyzeResponse.fromJson(Map<String, dynamic> j) => AnalyzeResponse(
         result: AnalysisResult.fromJson(j['result'] as Map<String, dynamic>),
         pharmacies: ((j['pharmacies'] as List?) ?? const [])
             .map((p) => Pharmacy.fromJson(p as Map<String, dynamic>))
             .toList(),
+        ocr: j['ocr'] == null ? null : Ocr.fromJson(j['ocr'] as Map<String, dynamic>),
+      );
+}
+
+class Ocr {
+  final String provider; // 'cerebras' | 'google'
+  final double? latencyS;
+  final int nItems;
+
+  const Ocr({required this.provider, required this.latencyS, required this.nItems});
+
+  factory Ocr.fromJson(Map<String, dynamic> j) => Ocr(
+        provider: j['provider'] as String? ?? '',
+        latencyS: _dn(j['latency_s']),
+        nItems: _i(j['n_items']),
       );
 }
 

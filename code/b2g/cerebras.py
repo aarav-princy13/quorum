@@ -22,9 +22,18 @@ MODEL_ID = "gemma-4-31b"
 API_KEY_ENV = "CEREBRAS_API_KEY"
 MAX_OUTPUT_TOKENS = 1024
 
+# Google AI Studio (OpenAI-compatible) serves the SAME model (gemma-4-31b-it) on
+# different hardware — used by the in-app provider switch for the speed demo.
+GOOGLE_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
+GOOGLE_MODEL = "gemma-4-31b-it"
+
 
 def have_key():
     return bool(os.environ.get(API_KEY_ENV))
+
+
+def google_key():
+    return os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
 
 
 def image_part(b64, mime="image/jpeg"):
@@ -55,7 +64,8 @@ def build_messages(system_prompt, user_text, image_part=None):
 
 
 def complete(messages, schema=None, reasoning_effort="none",
-             temperature=0.0, model=MODEL_ID, max_tokens=MAX_OUTPUT_TOKENS, timeout=60):
+             temperature=0.0, model=MODEL_ID, max_tokens=MAX_OUTPUT_TOKENS, timeout=60,
+             base_url=None, api_key=None):
     # temperature=0: OCR and verification want the SAME answer every run. Sampling
     # (temp>0) makes reads of a hard/blurry image vary run-to-run, which the fuzzy
     # matcher then amplifies into different prices. Committee diversity comes from the
@@ -65,9 +75,10 @@ def complete(messages, schema=None, reasoning_effort="none",
     meta = {"usage", "time_info", "latency_s"}. Raises RuntimeError on HTTP error
     (with the server's message) so failures are loud, not silent.
     """
-    key = os.environ.get(API_KEY_ENV)
+    key = api_key or os.environ.get(API_KEY_ENV)
     if not key:
         raise RuntimeError(f"{API_KEY_ENV} not set (use mock mode offline).")
+    url = (base_url.rstrip("/") + "/chat/completions") if base_url else API_URL
 
     body = {
         "model": model,
@@ -85,7 +96,7 @@ def complete(messages, schema=None, reasoning_effort="none",
         }
 
     req = urllib.request.Request(
-        API_URL,
+        url,
         data=json.dumps(body).encode("utf-8"),
         headers={
             "Authorization": f"Bearer {key}",
@@ -102,7 +113,7 @@ def complete(messages, schema=None, reasoning_effort="none",
             data = json.load(resp)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")[:400]
-        raise RuntimeError(f"Cerebras HTTP {exc.code}: {detail}") from None
+        raise RuntimeError(f"LLM HTTP {exc.code}: {detail}") from None
     latency = round(time.monotonic() - t0, 3)
 
     text = data["choices"][0]["message"]["content"]

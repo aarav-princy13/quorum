@@ -19,6 +19,8 @@ import 'nearby_screen.dart';
 /// How many pharmacies the inline card shows before deferring to the Nearby screen.
 const _kInlinePharmacies = 3;
 
+String _providerName(String p) => p == 'google' ? 'Google AI Studio' : 'Cerebras';
+
 /// The centerpiece screen (DESIGN.md): savings summary -> bordered medicine rows
 /// (composition, savings, Rx/safety badges, cheaper option + Jan Aushadhi anchor)
 /// -> safety callouts -> nearby pharmacies -> Scan another -> disclaimer.
@@ -90,6 +92,24 @@ class ResultsScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                 children: [
                   _SummaryStrip(summary: result.summary),
+                  if (data.ocr != null && data.ocr!.latencyS != null) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(Icons.bolt_outlined, size: 14, color: c.textMuted),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            context.s.readBy(_providerName(data.ocr!.provider),
+                                data.ocr!.latencyS!.toStringAsFixed(1)),
+                            style: TextStyle(
+                                fontFamily: AppFonts.family, fontFamilyFallback: AppFonts.fallback,
+                                fontSize: 12, color: c.textMuted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 22),
                   SectionLabel(context.s.yourMedicines),
                   const SizedBox(height: 2),

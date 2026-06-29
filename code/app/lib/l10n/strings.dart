@@ -39,6 +39,9 @@ class S {
       );
   String get readingWithGemma =>
       _('Reading with Gemma 4…', 'Gemma 4 से पढ़ा जा रहा है…');
+  String get cloudEngine => _('Inference engine', 'इन्फरेंस इंजन');
+  String readBy(String engine, String secs) =>
+      _('Read by $engine in ${secs}s', '$engine ने ${secs}s में पढ़ा');
   String get uploadingNote => _(
         'Uploading the photo to read it with Gemma 4 on Cerebras.',
         'फ़ोटो को Cerebras पर Gemma 4 से पढ़ने के लिए अपलोड किया जा रहा है।',
