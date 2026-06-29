@@ -145,7 +145,7 @@ class B2gApi {
       req.contentLength = body.length;
       req.add(body);
 
-      final resp = await req.close().timeout(const Duration(seconds: 25));
+      final resp = await req.close().timeout(const Duration(seconds: 90));
       final text = await resp.transform(utf8.decoder).join();
       if (resp.statusCode != 200) {
         throw ApiException(_friendly(resp.statusCode, text), statusCode: resp.statusCode);
