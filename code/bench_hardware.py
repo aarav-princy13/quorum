@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Hardware speed comparison for the demo: Cerebras vs a local Mac model.
+"""Inference speed comparison for the demo — same model family, different hardware.
 
-Runs the SAME prompt, SAME settings, through the SAME code path against:
-  • Cerebras  — gemma-4-31b  (wafer-scale inference)         CEREBRAS_API_KEY
-  • Local Mac — qwen4boQ4 via an OpenAI-compatible server    OMLX_API_KEY
+Runs the SAME prompt, SAME settings, through the SAME OpenAI-compatible code path
+against whichever providers you have configured:
+  • Cerebras       — gemma-4-31b on wafer-scale            CEREBRAS_API_KEY   (required)
+  • Google AI Studio — Gemma on Google GPU/TPU             GOOGLE_API_KEY     (if set)
+  • Local Mac      — a local model via OpenAI-compat server OMLX_API_KEY      (if reachable)
 
-Both are OpenAI-compatible chat-completions endpoints, so the request is
-identical — only the hardware differs. Reports end-to-end latency and
-tokens/sec (median of N runs) + the speedup, and writes output/hardware_compare.json.
+The headline comparison is Cerebras-Gemma vs Google-Gemma: same family, comparable
+size, both cloud — so the gap reflects the INFERENCE HARDWARE, not the model.
+(AI Studio serves Gemma 3; Gemma 4 31B is the Cerebras preview model.)
 
-  python3 code/bench_hardware.py                 # 3 runs each
-  python3 code/bench_hardware.py --runs 5
-  python3 code/bench_hardware.py --local-model qwen4boQ4 --local-url http://localhost:8000/v1
+  python3 code/bench_hardware.py                       # all configured providers, 3 runs
+  python3 code/bench_hardware.py --runs 5 --no-local
+  python3 code/bench_hardware.py --google-model gemma-3-27b-it
 
-Prereqs: `export CEREBRAS_API_KEY=…`, `export OMLX_API_KEY=…`, and your local
-server serving the model on :8000. Stdlib only.
+Prereqs: export the keys above; for local, serve the model on :8000. Stdlib only.
 """
 
 import argparse
@@ -66,8 +67,9 @@ def _bench(label, base_url, api_key, model, runs):
     print(f"\n• {label}: {model}  ({base_url})")
     try:
         _post(base_url, api_key, model)            # warm-up (loads weights), untimed
-    except urllib.error.URLError as exc:
-        print(f"    SKIP — could not reach endpoint: {exc}")
+    except Exception as exc:                        # unreachable / bad model id -> skip
+        detail = exc.read().decode("utf-8", "replace")[:160] if hasattr(exc, "read") else exc
+        print(f"    SKIP — {detail}")
         return None
     walls, toks = [], []
     for i in range(runs):
@@ -80,43 +82,60 @@ def _bench(label, base_url, api_key, model, runs):
     med_tok = statistics.median(toks) if toks else None
     tps = (med_tok / med_wall) if med_tok else None
     return {"label": label, "model": model, "wall_s": round(med_wall, 3),
-            "completion_tokens": med_tok,
-            "tokens_per_s": round(tps, 1) if tps else None}
+            "completion_tokens": med_tok, "tokens_per_s": round(tps, 1) if tps else None}
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
-    ap.add_argument("--local-url", default="http://localhost:8000/v1")
-    ap.add_argument("--local-model", default="qwen4boQ4")
     ap.add_argument("--cerebras-model", default="gemma-4-31b")
+    ap.add_argument("--google-model", default="gemma-3-27b-it")
+    ap.add_argument("--local-url", default="http://localhost:8000/v1")
+    ap.add_argument("--local-model", default="QwenPaw-Flash-4B-oQ4-fp16")
+    ap.add_argument("--no-local", action="store_true", help="skip the local Mac model")
     args = ap.parse_args()
 
     cere_key = os.environ.get("CEREBRAS_API_KEY")
-    omlx_key = os.environ.get("OMLX_API_KEY", "not-needed")
     if not cere_key:
         sys.exit("Set CEREBRAS_API_KEY first.")
+    google_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
 
-    print("Hardware speed comparison — same prompt, same settings")
-    cerebras = _bench("Cerebras (wafer-scale)", "https://api.cerebras.ai/v1",
-                      cere_key, args.cerebras_model, args.runs)
-    local = _bench("Mac (Apple Silicon)", args.local_url, omlx_key,
-                   args.local_model, args.runs)
+    contenders = [("Cerebras · Gemma 4 (wafer-scale)", "https://api.cerebras.ai/v1",
+                   cere_key, args.cerebras_model)]
+    if google_key:
+        contenders.append(("Google AI Studio · Gemma 3 (GPU/TPU)",
+                           "https://generativelanguage.googleapis.com/v1beta/openai",
+                           google_key, args.google_model))
+    else:
+        print("(no GOOGLE_API_KEY / GEMINI_API_KEY — skipping Google AI Studio)")
+    if not args.no_local:
+        contenders.append(("Local Mac (Apple Silicon)", args.local_url,
+                           os.environ.get("OMLX_API_KEY", "not-needed"), args.local_model))
 
-    print("\n" + "=" * 60)
-    rows = [r for r in (cerebras, local) if r]
-    for r in rows:
+    print("Inference speed — same prompt, same settings, different hardware")
+    results = [r for r in (_bench(*c, args.runs) for c in contenders) if r]
+
+    print("\n" + "=" * 64)
+    for r in results:
         tps = f"{r['tokens_per_s']} tok/s" if r["tokens_per_s"] else "tok/s n/a"
-        print(f"  {r['label']:<24} {r['wall_s']:>7.2f}s   {tps}")
-    if cerebras and local:
-        print("-" * 60)
-        print(f"  → Cerebras is {local['wall_s'] / cerebras['wall_s']:.1f}x faster end-to-end"
-              + (f", {local['tokens_per_s'] and cerebras['tokens_per_s'] and round(cerebras['tokens_per_s'] / local['tokens_per_s'], 1)}x throughput"
-                 if (cerebras['tokens_per_s'] and local['tokens_per_s']) else ""))
+        print(f"  {r['label']:<38} {r['wall_s']:>6.2f}s   {tps:>12}")
+    cere = results[0] if results and results[0]["label"].startswith("Cerebras") else None
+    if cere:
+        print("-" * 64)
+        for r in results[1:]:
+            faster = r["wall_s"] / cere["wall_s"]
+            thru = (cere["tokens_per_s"] / r["tokens_per_s"]
+                    if (cere["tokens_per_s"] and r["tokens_per_s"]) else None)
+            line = f"  → vs {r['label']}: {faster:.1f}x faster end-to-end"
+            if thru:
+                line += f", {thru:.1f}x throughput"
+            print(line)
+    print("\n  note: tok/s = end-to-end throughput (incl. network); models may stop at\n"
+          "  different lengths, so tok/s is the fairest hardware metric.")
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     (OUTPUT_DIR / "hardware_compare.json").write_text(
-        json.dumps({"cerebras": cerebras, "local": local}, indent=2), encoding="utf-8")
+        json.dumps({"results": results}, indent=2), encoding="utf-8")
     print(f"\nsaved {OUTPUT_DIR / 'hardware_compare.json'}")
 
 
