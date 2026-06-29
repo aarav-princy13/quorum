@@ -288,7 +288,12 @@ class Handler(BaseHTTPRequestHandler):
                 elif self.path == "/v1/scan":
                     # OPT-IN cloud path: app uploaded the image to read with Gemma 4
                     # vision (default flow keeps OCR on-device). Then match + verify.
-                    items, ocr_meta = vlm_ocr.ocr_receipt_b64(image_b64, mime, provider=provider)
+                    try:
+                        items, ocr_meta = vlm_ocr.ocr_receipt_b64(image_b64, mime, provider=provider)
+                    except Exception:
+                        log.exception("cloud OCR via %s failed", provider)
+                        self._send(502, {"error": f"cloud OCR via {provider} failed"})
+                        return self._audit(502, t0, "ocr_fail:" + provider, keyid)
                     items = items[:MAX_ITEMS]
                     result = process_receipt(conn, items)
                     if verify:
@@ -342,6 +347,9 @@ def main():
     log.info("safety quorum: %s",
              "ON (CEREBRAS_API_KEY present)" if cerebras.have_key()
              else "OFF — set CEREBRAS_API_KEY before starting to enable /v1/analyze verify")
+    log.info("google engine: %s",
+             "ON (GOOGLE_API_KEY present)" if cerebras.google_key()
+             else "OFF — set GOOGLE_API_KEY before starting to enable the Google engine")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
