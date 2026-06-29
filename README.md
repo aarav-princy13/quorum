@@ -6,6 +6,10 @@
 
 ---
 
+
+https://github.com/user-attachments/assets/895fa520-5e80-4022-8376-74934441ee8a
+
+
 ## What is it?
 People in India overpay for medicine every day, even though cheaper generic variants with the exact same active ingredient usually exist. Tools that suggest generic medication already exist; however, they make you enter drug names and operate to a low efficiency, missing significant medications and deals that Quorum does not. Most importantly, they fail to inform you when a swap is unsafe.
 
