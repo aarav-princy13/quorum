@@ -36,3 +36,8 @@ output/*
 # Source, adapters, and gold/ ARE tracked; the venv is covered by .venv/ above.
 code/ocr_bench/.bin/
 code/ocr_bench/models/
+
+# Public repo: ignore internal docs/specs; keep only the root README (rewritten for the comp).
+*.md
+!/README.md
+/pharmaceutical_invoice.jpeg
