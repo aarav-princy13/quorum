@@ -73,12 +73,13 @@ def ocr_receipt_b64(b64, mime="image/jpeg", provider="cerebras"):
         key = cerebras.google_key()
         if not key:
             raise RuntimeError("GOOGLE_API_KEY not set")
-        # Gemini's OpenAI-compat layer may not accept strict json_schema, so rely on
-        # the prompt + extract_json (the schema is Cerebras-only here).
-        text, meta = cerebras.complete(messages, schema=None, base_url=cerebras.GOOGLE_BASE_URL,
-                                       api_key=key, model=cerebras.GOOGLE_MODEL)
+        # Gemini's OpenAI-compat layer is flaky with strict json_schema, so use the
+        # looser json_object mode (the prompt already asks for a JSON object).
+        text, meta = cerebras.complete(messages, schema=None, json_object=True,
+                                       base_url=cerebras.GOOGLE_BASE_URL, api_key=key,
+                                       model=cerebras.GOOGLE_MODEL, max_tokens=2048)
     else:
-        text, meta = cerebras.complete(messages, schema=RECEIPT_SCHEMA)
+        text, meta = cerebras.complete(messages, schema=RECEIPT_SCHEMA, max_tokens=2048)
     meta = dict(meta or {})
     meta["provider"] = provider
     return cerebras.extract_json(text).get("items", []), meta

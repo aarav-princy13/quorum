@@ -65,7 +65,7 @@ def build_messages(system_prompt, user_text, image_part=None):
 
 def complete(messages, schema=None, reasoning_effort="none",
              temperature=0.0, model=MODEL_ID, max_tokens=MAX_OUTPUT_TOKENS, timeout=60,
-             base_url=None, api_key=None):
+             base_url=None, api_key=None, json_object=False):
     # temperature=0: OCR and verification want the SAME answer every run. Sampling
     # (temp>0) makes reads of a hard/blurry image vary run-to-run, which the fuzzy
     # matcher then amplifies into different prices. Committee diversity comes from the
@@ -94,6 +94,10 @@ def complete(messages, schema=None, reasoning_effort="none",
             "type": "json_schema",
             "json_schema": {"name": "verdict", "strict": True, "schema": schema},
         }
+    elif json_object:
+        # Looser "must be a JSON object" mode — supported by providers (e.g. Gemini's
+        # OpenAI layer) that don't accept strict json_schema. Prompt must mention JSON.
+        body["response_format"] = {"type": "json_object"}
 
     req = urllib.request.Request(
         url,
@@ -130,6 +134,7 @@ def extract_json(text):
     # a stray '{' in the reasoning can't derail parsing of the real JSON answer.
     if "</think>" in text:
         text = text.rsplit("</think>", 1)[-1]
+    text = text.replace("```json", " ").replace("```", " ")   # strip markdown fences
     start, end = text.find("{"), text.rfind("}")
     if start == -1 or end <= start:
         raise ValueError(f"no JSON object in reply: {text[:80]!r}")
